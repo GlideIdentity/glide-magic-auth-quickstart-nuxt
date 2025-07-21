@@ -87,7 +87,7 @@
             v-else
             class="button-primary" 
             @click="handleVerifyNumber" 
-            :disabled="isLoading || !phoneInput || phoneError"
+            :disabled="isLoading || !phoneInput || !!phoneError"
           >
             <span v-if="isLoading" class="loading-spinner"></span>
             {{ isLoading ? getLoadingText() : 'Verify Phone Number' }}
@@ -155,16 +155,22 @@
       </section>
 
       <!-- Results Section -->
-      <div v-if="error && resultFlow === selectedFlow" :class="`message ${error.error === 'CARRIER_NOT_SUPPORTED' ? 'message-warning' : 'message-error'}`">
-        <span class="message-icon">{{ error.error === 'CARRIER_NOT_SUPPORTED' ? '⚠️' : '✕' }}</span>
+      <div v-if="error && resultFlow === selectedFlow" :class="`message ${error.code === PhoneAuthErrorCode.CARRIER_NOT_ELIGIBLE ? 'message-warning' : 'message-error'}`">
+        <span class="message-icon">{{ error.code === PhoneAuthErrorCode.CARRIER_NOT_ELIGIBLE ? '⚠️' : '✕' }}</span>
         <div class="message-content">
-          <h4>{{ error.error === 'CARRIER_NOT_SUPPORTED' ? 'Carrier Not Supported' : 'Error' }}</h4>
-          <p>{{ error.message || 'An error occurred' }}</p>
-          <div v-if="error.details?.carrier_name" class="carrier-info">
-            <strong>Carrier:</strong> {{ error.details.carrier_name }}<br />
-            <strong>Reason:</strong> {{ error.details.reason }}
+          <h4>{{ error.code === PhoneAuthErrorCode.CARRIER_NOT_ELIGIBLE ? 'Carrier Not Supported' : 'Error' }}</h4>
+          <p>{{ isPhoneAuthError(error) && isUserError(error) ? getUserMessage(error) : (error.message || 'An error occurred') }}</p>
+          <div v-if="error.details?.reason" class="carrier-info">
+            <strong>Reason:</strong> {{ error.details?.reason || 'Not supported by carrier' }}
           </div>
-          <p v-if="error.code && error.error !== 'CARRIER_NOT_SUPPORTED'"><code>{{ error.code }}</code></p>
+          <p v-if="error.code && error.code !== PhoneAuthErrorCode.CARRIER_NOT_ELIGIBLE" class="error-code">
+            <small>Error Code: {{ error.code }}</small>
+            <small v-if="error.requestId"><br />Request ID: {{ error.requestId }}</small>
+          </p>
+          <details v-if="error.browserError" class="browser-error-details">
+            <summary>Browser Error Details</summary>
+            <pre>{{ JSON.stringify(error.browserError, null, 2) }}</pre>
+          </details>
         </div>
       </div>
 
@@ -228,7 +234,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useClient } from 'glide-web-client-sdk/vue'
+import { 
+  usePhoneAuth,
+  PhoneAuthErrorCode, 
+  isPhoneAuthError,
+  isUserError,
+  getUserMessage,
+  serializeError,
+  isErrorCode
+} from 'glide-web-client-sdk/vue'
 
 // Reactive state
 const phoneInput = ref('')
@@ -238,22 +252,14 @@ const resultFlow = ref(null)
 
 // URL Configuration:
 // Option 1: Local server routes (requires running the local Nuxt server with your own Glide credentials)
-// const prepareRequest = '/api/phone-auth/prepare'
-// const processResponse = '/api/phone-auth/process'
+const prepareRequest = '/api/phone-auth/prepare'
+const processResponse = '/api/phone-auth/process'
 
 // Option 2: Pre-made external server (for quick testing with hosted credentials)
-const prepareRequest = 'https://checkout-demo-server.glideidentity.dev/generate-get-request'
-const processResponse = 'https://checkout-demo-server.glideidentity.dev/processCredential'
+// const prepareRequest = 'https://checkout-demo-server.glideidentity.dev/generate-get-request'
+// const processResponse = 'https://checkout-demo-server.glideidentity.dev/processCredential'
 
-// Initialize the client
-const { usePhoneAuth } = useClient({
-  phoneAuthEndpoints: {
-    prepareRequest,
-    processResponse
-  },
-  debug: true,
-})
-
+// Initialize phone auth with config
 const {
   getPhoneNumber,
   verifyPhoneNumber,
@@ -262,7 +268,19 @@ const {
   result,
   currentStep,
   isSupported
-} = usePhoneAuth()
+} = usePhoneAuth({
+  endpoints: {
+    prepare: prepareRequest,
+    process: processResponse
+  }
+})
+
+// Check browser support on mount
+onMounted(() => {
+  if (!isSupported?.value) {
+    console.warn('Browser does not support Digital Credentials API')
+  }
+})
 
 // Phone validation
 const validatePhoneNumber = (phone) => {
@@ -296,17 +314,19 @@ const validatePhoneNumber = (phone) => {
 }
 
 // Computed properties
-const getLoadingText = computed(() => {
+const getLoadingText = () => {
   if (currentStep.value === 'requesting') return 'Preparing request...'
   if (currentStep.value === 'authenticating') return 'Waiting for carrier approval...'
   if (currentStep.value === 'processing') return 'Processing response...'
   return 'Loading...'
-})
+}
 
 // Methods
 const handlePhoneChange = () => {
-  // Clear error when user starts typing
-  if (phoneError.value) {
+  // Validate phone number as user types
+  if (phoneInput.value) {
+    phoneError.value = validatePhoneNumber(phoneInput.value)
+  } else {
     phoneError.value = ''
   }
 }
@@ -325,36 +345,29 @@ const handleGetNumber = async () => {
         policy_text: 'Privacy policy'
       }
     })
-    console.log('Phone number retrieved:', response)
     resultFlow.value = 'get'
   } catch (err) {
-    console.error('Failed to get phone number:', err)
     resultFlow.value = 'get'
+    // Error is handled by the UI
   }
 }
 
 const handleVerifyNumber = async () => {
-  const validationError = validatePhoneNumber(phoneInput.value)
+  // Validate phone number before submission
+  phoneError.value = validatePhoneNumber(phoneInput.value)
   
-  if (validationError) {
-    phoneError.value = validationError
+  if (phoneError.value) {
     return
   }
   
   try {
     const response = await verifyPhoneNumber(phoneInput.value)
-    console.log('Verification result:', response)
     resultFlow.value = 'verify'
   } catch (err) {
-    console.error('Failed to verify phone number:', err)
     resultFlow.value = 'verify'
+    // Error is handled by the UI
   }
 }
 
-// Check browser support on mount
-onMounted(() => {
-  if (!isSupported.value) {
-    console.warn('Browser does not support Digital Credentials API')
-  }
-})
+
 </script>

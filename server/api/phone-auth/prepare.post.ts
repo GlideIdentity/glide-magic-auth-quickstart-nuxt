@@ -1,11 +1,10 @@
-import { GlideClient, AuthV2PrepDto } from 'glide-sdk'
+import { GlideClient, AuthV2PrepDto, MagicAuthError } from 'glide-sdk'
 
 interface EligibilityErrorResponse {
   error: string
   message: string
   details: {
     eligible: boolean
-    carrier_name?: string
     reason?: string
   }
 }
@@ -88,22 +87,6 @@ export default defineEventHandler(async (event) => {
     const response = await glide.magicAuth.prepare(prepareParams)
     console.log('Response:', response)
     
-    // Check if this is an eligibility response (carrier not supported)
-    if (response?.eligible === false) {
-      const eligibilityResponse: EligibilityErrorResponse = {
-        error: 'CARRIER_NOT_SUPPORTED',
-        message: response.reason || 'This carrier is not supported',
-        details: {
-          eligible: false,
-          carrier_name: response.carrier_name,
-          reason: response.reason
-        }
-      }
-      
-      setResponseStatus(event, 400)
-      return eligibilityResponse
-    }
-    
     // Check if response already has the expected format
     if (response.protocol && response.data) {
       // New format - response is already properly formatted
@@ -113,12 +96,34 @@ export default defineEventHandler(async (event) => {
       throw new Error('Unexpected response format from Glide SDK')
     }
   } catch (error) {
-    console.error('Phone auth request error:', (error as Error).message)
+    console.log('Caught error:', error)
     
+    if (error instanceof MagicAuthError) {
+        // You now have access to all error details
+        console.log('MagicAuthError details:', {
+            code: error.code,
+            message: error.message,
+            status: error.status,
+            requestId: error.requestId,
+            details: error.details
+        })
+        
+        // Return the structured error to your frontend
+        setResponseStatus(event, error.status)
+        return {
+            error: error.code,
+            message: error.message,
+            requestId: error.requestId,
+            details: error.details
+        }
+    }
+    
+    // Handle other errors...
     setResponseStatus(event, 500)
     return {
-      error: (error as Error).message,
-      details: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
+        error: 'UNEXPECTED_ERROR',
+        message: (error as Error).message,
+        details: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
     }
-  }
+}
 }) 
