@@ -233,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { 
   usePhoneAuth,
   PhoneAuthErrorCode, 
@@ -272,7 +272,8 @@ const {
   endpoints: {
     prepare: prepareRequest,
     process: processResponse
-  }
+  },
+  debug: true // Enable debug mode for detailed logging
 })
 
 // Check browser support on mount
@@ -281,6 +282,12 @@ onMounted(() => {
     console.warn('Browser does not support Digital Credentials API')
   }
 })
+
+// Optional: Watch for step changes to log progress
+// Uncomment if you want to see step-by-step progress in console
+// watch(currentStep, (newStep, oldStep) => {
+//   console.log(`Phone auth step changed: ${oldStep} → ${newStep}`)
+// })
 
 // Phone validation
 const validatePhoneNumber = (phone) => {
@@ -340,15 +347,16 @@ const handleGetNumber = async () => {
   try {
     const response = await getPhoneNumber({
       consentData: {
-        consent_text: 'I consent to the terms and conditions',
-        policy_link: 'https://www.example.com/privacy',
-        policy_text: 'Privacy policy'
+        consentText: 'I consent to the terms and conditions',
+        policyLink: 'https://www.example.com/privacy',
+        policyText: 'Privacy policy'
       }
     })
+    console.log('Phone number retrieved:', response)
     resultFlow.value = 'get'
   } catch (err) {
+    console.error('Failed to get phone number:', err)
     resultFlow.value = 'get'
-    // Error is handled by the UI
   }
 }
 
@@ -362,10 +370,11 @@ const handleVerifyNumber = async () => {
   
   try {
     const response = await verifyPhoneNumber(phoneInput.value)
+    console.log('Verification result:', response)
     resultFlow.value = 'verify'
   } catch (err) {
+    console.error('Failed to verify phone number:', err)
     resultFlow.value = 'verify'
-    // Error is handled by the UI
   }
 }
 
