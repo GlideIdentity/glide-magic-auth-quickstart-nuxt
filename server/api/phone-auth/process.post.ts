@@ -1,31 +1,37 @@
-import { GlideClient } from 'glide-sdk'
+import { GlideClient, MagicAuthError } from 'glide-sdk'
 
+// Type definitions
 interface PhoneAuthProcessRequest {
-  response: any // The credential response object from the client
-  session: string
-  phoneNumber?: string
+  response?: any; // The credential response object from the client
+  credentialResponse?: any; // Alternative name for credential response
+  sessionInfo?: any;  // Full SessionInfo object from prepare response
+  session?: any;  // Alternative name for sessionInfo
+  phoneNumber?: string;
+  phone_number?: string; // Alternative snake_case name
+  useCase?: string;
+  options?: any;  // Optional options for session metadata
 }
 
 interface AuthProcessResponse {
-  phone_number?: string
-  phoneNumber?: string
-  verified?: boolean
-  [key: string]: any
+  phone_number?: string;
+  phoneNumber?: string;
+  verified?: boolean;
+  [key: string]: any;
 }
 
-// Initialize Glide client only if credentials are available
+// Initialize Glide client
+const apiKey = process.env.GLIDE_API_KEY
+const apiBaseUrl = process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app'
+
 let glide: GlideClient | null = null
-try {
-  if (process.env.GLIDE_CLIENT_ID && process.env.GLIDE_CLIENT_SECRET) {
-    glide = new GlideClient({
-      clientId: process.env.GLIDE_CLIENT_ID,
-      clientSecret: process.env.GLIDE_CLIENT_SECRET,
-      // @ts-ignore - environment is a valid option but not in the type definition
-      environment: 'sandbox' // Change to 'production' when ready
-    })
-  }
-} catch (error) {
-  console.warn('Failed to initialize GlideClient:', error)
+if (apiKey) {
+  glide = new GlideClient({
+    apiKey: apiKey,
+    internal: {
+      apiBaseUrl: apiBaseUrl,
+      authBaseUrl: process.env.GLIDE_AUTH_BASE_URL || 'https://oidc.gateway-x.io'
+    }
+  })
 }
 
 export default defineEventHandler(async (event) => {
@@ -34,10 +40,9 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 503)
     return {
       error: 'LOCAL_SERVER_NOT_CONFIGURED',
-      message: 'Local server is not configured. Please set GLIDE_CLIENT_ID and GLIDE_CLIENT_SECRET environment variables or use the external server option.',
+      message: 'Local server is not configured. Please set GLIDE_API_KEY environment variable or use the external server option.',
       details: {
-        hasClientId: !!process.env.GLIDE_CLIENT_ID,
-        hasClientSecret: !!process.env.GLIDE_CLIENT_SECRET
+        hasApiKey: !!process.env.GLIDE_API_KEY
       }
     }
   }
@@ -46,37 +51,92 @@ export default defineEventHandler(async (event) => {
     const body = await readBody<PhoneAuthProcessRequest>(event)
     console.log('/api/phone-auth/process', body)
     
-    const { response, session, phoneNumber } = body
+    // Handle both camelCase and snake_case property names
+    const response = body.response || body.credentialResponse
+    const sessionInfo = body.sessionInfo || body.session
+    const phoneNumber = body.phoneNumber || body.phone_number
+    const useCase = body.useCase
     
-    const processParams: any = {
-      credentialResponse: response,
-      session: session,
-      phoneNumber: phoneNumber,
-    }
+    // Determine which SDK method to use based on useCase
+    let result: AuthProcessResponse
     
-    console.log('Calling glide.magicAuth.processCredential with:', processParams)    
-    const result = await glide.magicAuth.processCredential(processParams) as AuthProcessResponse
-
-    console.log('Response:', result)
-    
-    // Return the result directly if it already has the expected format
-    if (result.phone_number || result.phoneNumber) {
-      return result
+    if (useCase === 'GetPhoneNumber') {
+      console.log('Calling glide.magicAuth.getPhoneNumber with sessionInfo:', sessionInfo)
+      result = await glide.magicAuth.getPhoneNumber({
+        sessionInfo: sessionInfo,
+        credential: response
+      })
+      console.log('GetPhoneNumber Response:', result)
+    } else if (useCase === 'VerifyPhoneNumber') {
+      console.log('Calling glide.magicAuth.verifyPhoneNumber with sessionInfo:', sessionInfo)
+      result = await glide.magicAuth.verifyPhoneNumber({
+        sessionInfo: sessionInfo,
+        credential: response
+      })
+      console.log('VerifyPhoneNumber Response:', result)
     } else {
-      // Fallback for unexpected format
-      return {
-        phone_number: result.phoneNumber || result.phone_number,
-        verified: result.verified !== undefined ? result.verified : true,
-        ...result
+      // Fallback - use getPhoneNumber if no phoneNumber, verifyPhoneNumber if phoneNumber provided
+      if (phoneNumber) {
+        console.log('Using verifyPhoneNumber (fallback)')
+        result = await glide.magicAuth.verifyPhoneNumber({
+          sessionInfo: sessionInfo,
+          credential: response
+        })
+      } else {
+        console.log('Using getPhoneNumber (fallback)')
+        result = await glide.magicAuth.getPhoneNumber({
+          sessionInfo: sessionInfo,
+          credential: response
+        })
       }
     }
-  } catch (error) {
-    console.error('Phone auth process error:', (error as Error).message)
     
+    console.log('Response from SDK:', result)
+    
+    // Normalize the response format
+    return {
+      phone_number: result.phone_number || result.phoneNumber,
+      phoneNumber: result.phone_number || result.phoneNumber,
+      verified: result.verified !== undefined ? result.verified : undefined,
+      success: true,
+      ...result
+    }
+  } catch (error: any) {
+    console.error('Phone auth process error:', error)
+    
+    if (error instanceof MagicAuthError) {
+      // You now have access to all error details
+      console.log('MagicAuthError details:', {
+        code: error.code,
+        message: error.message,
+        status: error.status,
+        requestId: error.requestId,
+        traceId: error.traceId,
+        spanId: error.spanId,
+        details: error.details
+      })
+      
+      // Return the structured error to frontend with proper status
+      const httpStatus = error.status || 500
+      setResponseStatus(event, httpStatus)
+      return {
+        error: error.code,
+        message: error.message,
+        requestId: error.requestId,
+        timestamp: error.timestamp,
+        traceId: error.traceId,
+        spanId: error.spanId,
+        details: error.details,
+        status: error.status // Include status in response for client to use
+      }
+    }
+    
+    // Handle other errors
     setResponseStatus(event, 500)
     return {
-      error: (error as Error).message,
-      details: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
+      error: 'UNEXPECTED_ERROR',
+      message: error.message || 'An unexpected error occurred',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }
   }
-}) 
+})

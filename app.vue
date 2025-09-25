@@ -92,6 +92,16 @@
             <span v-if="isLoading" class="loading-spinner"></span>
             {{ isLoading ? getLoadingText() : 'Verify Phone Number' }}
           </button>
+          
+          <!-- Retry button for errors (new in beta.2) -->
+          <button 
+            v-if="error && !isLoading"
+            class="button-secondary"
+            @click="handleRetry"
+            style="margin-left: 10px; background-color: #ff9800;"
+          >
+            Retry Request
+          </button>
         </div>
 
         <!-- Progress Bar -->
@@ -259,21 +269,30 @@ const processResponse = '/api/phone-auth/process'
 // const prepareRequest = 'https://checkout-demo-server.glideidentity.dev/generate-get-request'
 // const processResponse = 'https://checkout-demo-server.glideidentity.dev/processCredential'
 
-// Initialize phone auth with config
+// Initialize phone auth with improved defaults (v4.0.0-beta.2)
 const {
   getPhoneNumber,
   verifyPhoneNumber,
+  retryLastRequest,
   isLoading,
   error,
   result,
   currentStep,
-  isSupported
+  isSupported,
+  reset
 } = usePhoneAuth({
   endpoints: {
     prepare: prepareRequest,
     process: processResponse
   },
-  debug: true // Enable debug mode for detailed logging
+  debug: true, // Enable debug mode for detailed logging
+  // Optional callbacks for monitoring (new in beta.2)
+  onCrossDeviceDetected: () => {
+    console.log('🔍 Cross-device flow detected (QR code shown)')
+  },
+  onRetryAttempt: (attempt, max) => {
+    console.log(`🔄 Retry attempt ${attempt}/${max}`)
+  }
 })
 
 // Check browser support on mount
@@ -345,7 +364,13 @@ const selectFlow = (flow) => {
 
 const handleGetNumber = async () => {
   try {
+    // Pass default T-Mobile PLMN for GetPhoneNumber
+    // The Web SDK requires either phoneNumber or PLMN to be provided
     const response = await getPhoneNumber({
+      plmn: {
+        mcc: '310',
+        mnc: '260'  // T-Mobile USA
+      },
       consentData: {
         consentText: 'I consent to the terms and conditions',
         policyLink: 'https://www.example.com/privacy',
@@ -375,6 +400,15 @@ const handleVerifyNumber = async () => {
   } catch (err) {
     console.error('Failed to verify phone number:', err)
     resultFlow.value = 'verify'
+  }
+}
+
+const handleRetry = async () => {
+  console.log('Manual retry initiated')
+  try {
+    await retryLastRequest()
+  } catch (error) {
+    console.error('Retry failed:', error)
   }
 }
 
