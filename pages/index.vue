@@ -1,5 +1,12 @@
 <template>
   <div>
+    <!-- Navigation -->
+    <nav style="background: #f5f5f7; padding: 10px; text-align: center; border-bottom: 1px solid #e5e5e7;">
+      <NuxtLink to="/" style="margin: 0 10px; font-weight: bold; color: #007AFF;">High-Level Flow</NuxtLink>
+      <span>|</span>
+      <NuxtLink to="/granular" style="margin: 0 10px; color: #007AFF;">Granular Step-by-Step</NuxtLink>
+    </nav>
+    
     <!-- Header -->
     <header class="header">
       <div class="header-brand">
@@ -364,6 +371,16 @@ const selectFlow = (flow) => {
 
 const handleGetNumber = async () => {
   try {
+    console.log('=== HIGH-LEVEL FLOW DEBUG ===')
+    console.log('Starting getPhoneNumber with options:', {
+      plmn: { mcc: '310', mnc: '260' },
+      consentData: {
+        consentText: 'I consent to the terms and conditions',
+        policyLink: 'https://www.example.com/privacy',
+        policyText: 'Privacy policy'
+      }
+    })
+    
     // Pass default T-Mobile PLMN for GetPhoneNumber
     // The Web SDK requires either phoneNumber or PLMN to be provided
     const response = await getPhoneNumber({

@@ -52,10 +52,11 @@ export default defineEventHandler(async (event) => {
     console.log('/api/phone-auth/process', body)
     
     // Handle both camelCase and snake_case property names
-    const response = body.response || body.credentialResponse
-    const sessionInfo = body.sessionInfo || body.session
+    // Also handle the new 'session' field name from updated SDK
+    const response = body.response || body.credentialResponse || body.credential
+    const sessionInfo = body.sessionInfo || body.session || body.session_info
     const phoneNumber = body.phoneNumber || body.phone_number
-    const useCase = body.useCase
+    const useCase = body.useCase || body.use_case
     
     // Determine which SDK method to use based on useCase
     let result: AuthProcessResponse
