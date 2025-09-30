@@ -1,4 +1,5 @@
-import { GlideClient, LogLevel, MagicAuthError, MagicAuthPrepareRequest, MagicAuthPrepareResponse } from 'glide-sdk'
+import { GlideClient, LogLevel, MagicAuthError, MagicAuthErrorCode, UseCase } from 'glide-sdk'
+import type { MagicAuthPrepareRequest, MagicAuthPrepareResponse } from 'glide-sdk'
 
 // Initialize Glide client
 const apiKey = process.env.GLIDE_API_KEY
@@ -18,8 +19,10 @@ export default defineEventHandler(async (event) => {
   if (!glide) {
     setResponseStatus(event, 503)
     return {
-      error: 'LOCAL_SERVER_NOT_CONFIGURED',
+      error: MagicAuthErrorCode.SERVICE_UNAVAILABLE,
       message: 'Local server is not configured. Please set GLIDE_API_KEY environment variable or use the external server option.',
+      status: 503,
+      timestamp: new Date().toISOString(),
       details: {
         hasApiKey: !!process.env.GLIDE_API_KEY
       }
@@ -33,7 +36,7 @@ export default defineEventHandler(async (event) => {
     const { use_case, phone_number, plmn, consent_data, client_info } = body
 
     // Pre-process the request parameters
-    const prepareParams: any = {
+    const prepareParams: MagicAuthPrepareRequest = {
       use_case
     }
 
@@ -50,7 +53,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // For GetPhoneNumber use case, if neither phone_number nor PLMN was provided, use default T-Mobile PLMN
-    if (use_case === 'GetPhoneNumber' && !phone_number && (!plmn || !plmn.mcc || !plmn.mnc)) {
+    if (use_case === UseCase.GET_PHONE_NUMBER && !phone_number && (!plmn || !plmn.mcc || !plmn.mnc)) {
       console.log('No phone_number or PLMN provided for GetPhoneNumber, using default T-Mobile PLMN')
       prepareParams.plmn = {
         mcc: '310',
@@ -84,7 +87,7 @@ export default defineEventHandler(async (event) => {
     } else {
       throw new Error('Unexpected response format from Glide SDK')
     }
-  } catch (error: any) {
+  } catch (error) {
     console.log('Caught error:', error)
     
     if (error instanceof MagicAuthError) {
@@ -114,12 +117,25 @@ export default defineEventHandler(async (event) => {
       }
     }
     
-    // Handle other errors
-    setResponseStatus(event, 500)
+    // Handle other errors - use 422 for business logic errors, 500 for true server errors
+    // Check if it's a network/system error that should be 500
+    const isServerError = error instanceof Error && (
+      error.message.toLowerCase().includes('network') || 
+      error.message.toLowerCase().includes('timeout') ||
+      error.message.toLowerCase().includes('econnrefused') ||
+      error.message.toLowerCase().includes('enotfound') ||
+      error.name === 'TypeError' || // Often indicates system-level issues
+      error.name === 'ReferenceError' // Programming errors
+    );
+    const statusCode = isServerError ? 500 : 422;
+    
+    setResponseStatus(event, statusCode)
     return {
-      error: 'UNEXPECTED_ERROR',
-      message: error.message || 'An unexpected error occurred',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: isServerError ? MagicAuthErrorCode.INTERNAL_SERVER_ERROR : MagicAuthErrorCode.UNPROCESSABLE_ENTITY,
+      message: error instanceof Error ? error.message : 'An unexpected error occurred',
+      status: statusCode,
+      timestamp: new Date().toISOString(),
+      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }
   }
 })
