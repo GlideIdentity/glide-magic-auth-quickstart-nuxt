@@ -12,8 +12,8 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "glide-sdk": "^5.1.0-beta.1",
-    "glide-web-client-sdk": "^4.2.0-beta.1",
+    "glide-sdk": "5.1.0-beta.2",
+    "glide-web-client-sdk": "4.2.0-beta.1",
     "nuxt": "^3.11.0",
     "nuxt-security": "^2.4.0",
     "vue": "^3.4.0",

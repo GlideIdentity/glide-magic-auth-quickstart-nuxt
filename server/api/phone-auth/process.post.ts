@@ -7,30 +7,15 @@ import type {
   GetPhoneNumberRequest,
   GetPhoneNumberResponse,
   VerifyPhoneNumberRequest,
-  VerifyPhoneNumberResponse,
-  UseCaseType
+  VerifyPhoneNumberResponse
 } from 'glide-sdk'
+// Import web SDK types for request body (they include use_case)
+import type {
+  GetPhoneNumberRequest as WebGetPhoneNumberRequest,
+  VerifyPhoneNumberRequest as WebVerifyPhoneNumberRequest
+} from 'glide-web-client-sdk'
 import { getGlideClient } from '~/server/utils/glideClient'
 
-// Define SessionInfo interface matching what frontend sends
-// This matches the API specification
-interface SessionInfo {
-  session_key: string;
-  nonce: string;
-  enc_key: string;
-}
-
-// Type definition for phone auth process request from frontend
-// This represents the HTTP request body structure, not an SDK type
-interface PhoneAuthProcessRequest {
-  // Required fields (snake_case as per API spec)
-  credential: string;  // Credential string from frontend
-  session: SessionInfo;  // Session from prepare response
-  
-  // Optional fields
-  phone_number?: string; // For verify use case
-  use_case?: UseCaseType;
-}
 
 
 export default defineEventHandler(async (event) => {
@@ -52,18 +37,35 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const body = await readBody<PhoneAuthProcessRequest>(event)
+    // Get typed request body - will be either GetPhoneNumberRequest or VerifyPhoneNumberRequest
+    // from the web SDK, both of which include use_case
+    const body = await readBody<WebGetPhoneNumberRequest | WebVerifyPhoneNumberRequest>(event)
     
-    // Simple happy path - pass request body directly
+    // Determine which SDK method to call based on use_case
+    // The Node SDK methods automatically add use_case internally
     if (body.use_case === UseCase.GET_PHONE_NUMBER) {
-      // Pass the request body as-is - no reconstruction needed
-      const result = await glide.magicAuth.getPhoneNumber(body)
+      const requestParams: GetPhoneNumberRequest = {
+        session: body.session,
+        credential: body.credential
+        // Node SDK automatically adds use_case internally
+      }
+      const result = await glide.magicAuth.getPhoneNumber(requestParams)
+      return result
+    } else if (body.use_case === UseCase.VERIFY_PHONE_NUMBER) {
+      const requestParams: VerifyPhoneNumberRequest = {
+        session: body.session,
+        credential: body.credential
+        // Node SDK automatically adds use_case internally
+      }
+      const result = await glide.magicAuth.verifyPhoneNumber(requestParams)
       return result
     } else {
-      // Default to verify phone number
-      // Pass the request body as-is - no reconstruction needed
-      const result = await glide.magicAuth.verifyPhoneNumber(body)
-      return result
+      // This should never happen as the union types enforce valid use_case values
+      throw new MagicAuthError({
+        code: MagicAuthErrorCode.VALIDATION_ERROR,
+        message: `Invalid use_case. Must be '${UseCase.GET_PHONE_NUMBER}' or '${UseCase.VERIFY_PHONE_NUMBER}'`,
+        status: 400
+      })
     }
   } catch (error) {
     if (error instanceof MagicAuthError) {
