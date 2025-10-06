@@ -1,5 +1,4 @@
 import { 
-  GlideClient, 
   MagicAuthError,
   MagicAuthErrorCode,
   UseCase
@@ -11,6 +10,7 @@ import type {
   VerifyPhoneNumberResponse,
   UseCaseType
 } from 'glide-sdk'
+import { getGlideClient } from '~/server/utils/glideClient'
 
 // Define SessionInfo interface matching what frontend sends
 // This matches the API specification
@@ -32,22 +32,11 @@ interface PhoneAuthProcessRequest {
   use_case?: UseCaseType;
 }
 
-// Initialize Glide client
-const apiKey = process.env.GLIDE_API_KEY
-const apiBaseUrl = process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app'
-
-let glide: GlideClient | null = null
-if (apiKey) {
-  glide = new GlideClient({
-    apiKey: apiKey,
-    internal: {
-      apiBaseUrl: apiBaseUrl,
-      authBaseUrl: process.env.GLIDE_AUTH_BASE_URL || 'https://oidc.gateway-x.io'
-    }
-  })
-}
 
 export default defineEventHandler(async (event) => {
+  // Get the shared client instance
+  const glide = getGlideClient()
+  
   // Check if local server is configured
   if (!glide) {
     setResponseStatus(event, 503)
@@ -64,136 +53,31 @@ export default defineEventHandler(async (event) => {
 
   try {
     const body = await readBody<PhoneAuthProcessRequest>(event)
-    console.log('/api/phone-auth/process', body)
     
-    // Extract fields from request (API spec uses snake_case)
-    const { credential, session, phone_number, use_case } = body
-    
-    // Validate required fields
-    if (!credential) {
-      setResponseStatus(event, 400)
-      return {
-        error: MagicAuthErrorCode.MISSING_PARAMETERS,
-        message: 'Missing required field: credential',
-        status: 400,
-        timestamp: new Date().toISOString()
-      }
-    }
-
-    if (!session) {
-      setResponseStatus(event, 400)
-      return {
-        error: MagicAuthErrorCode.MISSING_PARAMETERS,
-        message: 'Missing required field: session',
-        status: 400,
-        timestamp: new Date().toISOString()
-      }
-    }
-    
-    // Determine which SDK method to use based on useCase
-    let result: GetPhoneNumberResponse | VerifyPhoneNumberResponse
-    
-    if (use_case === UseCase.GET_PHONE_NUMBER) {
-      console.log('Calling glide.magicAuth.getPhoneNumber')
-      // Rebuild credential structure for Node SDK
-      const getParams: GetPhoneNumberRequest = {
-        sessionInfo: session,
-        credential: {
-          vp_token: { glide: credential }  // SDK expects this format
-        }
-      }
-      result = await glide.magicAuth.getPhoneNumber(getParams)
-      console.log('GetPhoneNumber Response:', result)
-    } else if (use_case === UseCase.VERIFY_PHONE_NUMBER) {
-      console.log('Calling glide.magicAuth.verifyPhoneNumber')
-      // Rebuild credential structure for Node SDK
-      const verifyParams: VerifyPhoneNumberRequest = {
-        sessionInfo: session,
-        credential: {
-          vp_token: { glide: credential }  // SDK expects this format
-        }
-      }
-      result = await glide.magicAuth.verifyPhoneNumber(verifyParams)
-      console.log('VerifyPhoneNumber Response:', result)
+    // Simple happy path - pass request body directly
+    if (body.use_case === UseCase.GET_PHONE_NUMBER) {
+      // Pass the request body as-is - no reconstruction needed
+      const result = await glide.magicAuth.getPhoneNumber(body)
+      return result
     } else {
-      // Fallback - use getPhoneNumber if no phone_number, verifyPhoneNumber if phone_number provided
-      if (phone_number) {
-        console.log('Using verifyPhoneNumber (fallback)')
-        // Rebuild credential structure for Node SDK
-        const verifyParams: VerifyPhoneNumberRequest = {
-          sessionInfo: session,
-          credential: {
-            vp_token: { glide: credential }  // SDK expects this format
-          }
-        }
-        result = await glide.magicAuth.verifyPhoneNumber(verifyParams)
-      } else {
-        console.log('Using getPhoneNumber (fallback)')
-        // Rebuild credential structure for Node SDK
-        const getParams: GetPhoneNumberRequest = {
-          sessionInfo: session,
-          credential: {
-            vp_token: { glide: credential }  // SDK expects this format
-          }
-        }
-        result = await glide.magicAuth.getPhoneNumber(getParams)
-      }
+      // Default to verify phone number
+      // Pass the request body as-is - no reconstruction needed
+      const result = await glide.magicAuth.verifyPhoneNumber(body)
+      return result
     }
-    
-    console.log('Response from SDK:', result)
-    
-    // Return the result directly - it already follows the API spec
-    return result
   } catch (error) {
-    console.error('Phone auth process error:', error)
-    
     if (error instanceof MagicAuthError) {
-      // You now have access to all error details
-      console.log('MagicAuthError details:', {
-        code: error.code,
-        message: error.message,
-        status: error.status,
-        requestId: error.requestId,
-        traceId: error.traceId,
-        spanId: error.spanId,
-        details: error.details
-      })
-      
-      // Return the structured error to frontend with proper status
-      const httpStatus = error.status || 500
-      setResponseStatus(event, httpStatus)
-      return {
-        error: error.code,
-        message: error.message,
-        requestId: error.requestId,
-        timestamp: error.timestamp,
-        traceId: error.traceId,
-        spanId: error.spanId,
-        details: error.details,
-        status: error.status // Include status in response for client to use
-      }
+      // MagicAuthError already has the correct format - just pass it through
+      setResponseStatus(event, error.status || 500)
+      return error
     }
     
-    // Handle other errors - use 422 for business logic errors, 500 for true server errors
-    console.error('Phone auth process error:', error instanceof Error ? error.message : error)
-    // Check if it's a network/system error that should be 500
-    const isServerError = error instanceof Error && (
-      error.message.toLowerCase().includes('network') || 
-      error.message.toLowerCase().includes('timeout') ||
-      error.message.toLowerCase().includes('econnrefused') ||
-      error.message.toLowerCase().includes('enotfound') ||
-      error.name === 'TypeError' || // Often indicates system-level issues
-      error.name === 'ReferenceError' // Programming errors
-    );
-    const statusCode = isServerError ? 500 : 422;
-    
-    setResponseStatus(event, statusCode)
+    // For unexpected errors, return a simple error response
+    setResponseStatus(event, 500)
     return { 
-      error: isServerError ? MagicAuthErrorCode.INTERNAL_SERVER_ERROR : MagicAuthErrorCode.UNPROCESSABLE_ENTITY,
+      error: MagicAuthErrorCode.INTERNAL_SERVER_ERROR,
       message: error instanceof Error ? error.message : 'An unexpected error occurred',
-      status: statusCode,
-      timestamp: new Date().toISOString(),
-      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      status: 500
     }
   }
 })
