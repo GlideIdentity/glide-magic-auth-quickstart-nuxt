@@ -8,6 +8,10 @@ Experience carrier-grade phone authentication in **2 minutes**. No SMS, no delay
 # Clone and install
 npm install
 
+# Copy environment file and add your API key
+cp env.example .env
+# Then edit .env and replace 'your_api_key_here' with your actual API key
+
 # Run it!
 npm run dev
 ```
@@ -38,20 +42,27 @@ npm run dev
 ```
 magical-auth-quickstart-nuxt/
 ├── pages/
-│   └── index.vue           # The entire app (both modes)
-├── server/api/
-│   ├── phone-auth/
-│   │   ├── prepare.post.ts # Step 1: Initialize
-│   │   └── process.post.ts # Step 3: Get result  
-│   └── health.get.ts       # Health check
-└── nuxt.config.ts         # Config (SSR disabled for Web APIs)
+│   └── index.vue              # Main app page
+├── components/
+│   └── SdkConfigPanel.vue     # SDK configuration panel
+├── server/
+│   ├── api/phone-auth/
+│   │   ├── prepare.post.ts    # Step 1: Initialize
+│   │   ├── process.post.ts    # Step 3: Get result
+│   │   └── status/
+│   │       └── [sessionId].get.ts  # Status polling proxy
+│   └── utils/
+│       └── glideClient.ts     # Glide SDK client setup
+├── assets/css/
+│   └── main.css               # Global styles
+└── nuxt.config.ts             # Config (SSR disabled for Web APIs)
 ```
 
 ## 🔧 Want Your Own API Key?
 
 The quickstart works out-of-the-box with our demo server. To use your own credentials:
 
-1. Get your API key from [Glide Dashboard](https://docs.glideapi.com/)
+1. Get your API key from [Glide Dashboard](https://docs.glideidentity.com/)
 2. Create `.env` file:
 ```env
 GLIDE_API_KEY=your_api_key_here
@@ -76,45 +87,20 @@ GLIDE_API_KEY=your_api_key_here
 ### Understanding the Flow
 
 **Step 1: Prepare** → Your server talks to Glide
+
 **Step 2: Browser Prompt** → Secure carrier verification  
+
 **Step 3: Process** → Get the verified result
 
 ## 🎨 Quick Customizations
 
-### Change Carrier (for Get Phone Number)
-```javascript
-// In pages/index.vue
-plmn: { mcc: '310', mnc: '260' }  // T-Mobile (default)
-plmn: { mcc: '310', mnc: '004' }  // Verizon
-plmn: { mcc: '310', mnc: '410' }  // AT&T
+
+### Change Server Port
+```bash
+# Default is 3000
+NUXT_PORT=3001 npm run dev
 ```
 
-### Customize Consent Text
-```javascript
-consent_data: {
-  consent_text: 'Your custom message',
-  policy_link: 'https://yoursite.com/privacy',
-  policy_text: 'Your Policy'
-}
-```
-
-## 📱 Browser Requirements
-
-Works on:
-- **Chrome/Edge 128+** on Android ✅
-- **Chrome/Edge Desktop** (with phone nearby) ✅
-- **Safari** (coming soon) 🔜
-
-## 🤔 Common Questions
-
-**"Browser not supported"**
-→ Use Chrome/Edge 128+ on Android or desktop
-
-**"401 Unauthorized"**  
-→ Check your API key in `.env`
-
-**"PLMN required"**
-→ Already handled! Default is T-Mobile USA
 
 ## 🚀 What's Next?
 
@@ -127,13 +113,18 @@ Now that you've seen it work:
 
 ## 📚 Resources
 
-- **[SDK Docs](https://docs.glideapi.com/)** - Full reference
-- **[API Spec](../GLIDE_API_SPECIFICATION.md)** - Detailed API info  
-- **[React Version](../magical-auth-quickstart-react)** - Same thing in React
+- **[SDK Documentation](https://docs.glideidentity.com/)**
+
+## 🌟 Why Nuxt 3?
+
+- **Vue 3 + Composition API** - Modern reactive patterns
+- **Full-stack in one** - Pages and API routes together
+- **Auto-imports** - No need to import Vue utilities
+- **TypeScript ready** - Type-safe out of the box
+- **Vue composable** - Uses `usePhoneAuth` from `@glideidentity/web-client-sdk/vue`
 
 ## 💬 Need Help?
 
-- **Discord**: [Join our community](https://discord.gg/glide)
 - **Email**: support@glideidentity.com
 
 ---

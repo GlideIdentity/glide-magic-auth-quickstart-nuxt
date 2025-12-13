@@ -1,44 +1,40 @@
-import { MagicAuthError, MagicAuthErrorCode, UseCase } from 'glide-sdk'
-import type { MagicAuthPrepareRequest, MagicAuthPrepareResponse } from 'glide-sdk'
 import { getGlideClient } from '~/server/utils/glideClient'
 
 export default defineEventHandler(async (event) => {
-  // Get the shared client instance
   const glide = getGlideClient()
   
-  // Check if local server is configured
   if (!glide) {
     setResponseStatus(event, 503)
     return {
-      error: MagicAuthErrorCode.SERVICE_UNAVAILABLE,
-      message: 'Local server is not configured. Please set GLIDE_API_KEY environment variable or use the external server option.',
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Server not configured. Please set GLIDE_API_KEY environment variable.',
       status: 503,
-      timestamp: new Date().toISOString(),
-      details: {
-        hasApiKey: !!process.env.GLIDE_API_KEY
-      }
     }
   }
 
   try {
-    const body = await readBody<MagicAuthPrepareRequest>(event)
+    const body = await readBody(event)
+    
+    console.log('📱 Prepare request:', { use_case: body.use_case })
     
     const response = await glide.magicAuth.prepare(body)
     
-    return response
-  } catch (error) {
-    if (error instanceof MagicAuthError) {
-      // MagicAuthError already has the correct format - just pass it through
-      setResponseStatus(event, error.status || 500)
-      return error
-    }
+    console.log('✅ Prepare success:', { 
+      strategy: response.authentication_strategy,
+      session_key: response.session?.session_key 
+    })
     
-    // For unexpected errors, return a simple error response
-    setResponseStatus(event, 500)
+    return response
+  } catch (error: any) {
+    console.error('❌ Prepare error:', error)
+    
+    // Pass through server errors as-is
+    const status = error.status || 500
+    setResponseStatus(event, status)
     return {
-      error: MagicAuthErrorCode.INTERNAL_SERVER_ERROR,
-      message: error instanceof Error ? error.message : 'An unexpected error occurred',
-      status: 500
+      error: error.code || 'INTERNAL_ERROR',
+      message: error.message || 'An unexpected error occurred',
+      status,
     }
   }
 })

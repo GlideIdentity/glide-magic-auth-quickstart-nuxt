@@ -8,7 +8,25 @@
       </div>
       <h1>Magical Auth Quick Start</h1>
       <p>Test carrier-grade phone verification in minutes. No SMS, no delays, no fraud.</p>
+      
+      <!-- SDK Config Button -->
+      <button class="sdk-config-btn" @click="showSdkConfig = true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>SDK Configuration</span>
+      </button>
     </header>
+
+    <!-- SDK Configuration Panel (Component) -->
+    <SdkConfigPanel
+      :is-open="showSdkConfig"
+      :config="sdkConfig"
+      @close="showSdkConfig = false"
+      @apply="applySdkConfig"
+      @reset="resetSdkConfig"
+    />
 
     <div class="container">
       <!-- Flow Mode Toggle -->
@@ -18,14 +36,12 @@
             :class="['mode-btn', { active: flowMode === 'highlevel' }]"
             @click="flowMode = 'highlevel'"
           >
-            <span class="mode-icon">⚡</span>
             High Level
           </button>
           <button 
             :class="['mode-btn', { active: flowMode === 'granular' }]"
             @click="flowMode = 'granular'"
           >
-            <span class="mode-icon">🔧</span>
             Granular
           </button>
         </div>
@@ -40,7 +56,14 @@
       <!-- Flow Type Section -->
       <section class="section">
         <div class="section-header">
-          <div class="section-icon">📱</div>
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <rect x="2" y="4" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"/>
+              <rect x="4.5" y="7" width="4" height="4" rx="0.5" fill="currentColor"/>
+              <rect x="13" y="4" width="9" height="13" rx="1.5" stroke="#999" stroke-width="1.5" fill="none"/>
+              <rect x="15.5" y="7" width="4" height="4" rx="0.5" fill="none" stroke="#999" stroke-width="1.5"/>
+            </svg>
+          </div>
           <div class="section-title">
             <h2>Flow Type</h2>
             <p>Choose what you want to do with the phone verification</p>
@@ -52,7 +75,11 @@
             :class="`card ${selectedFlow === 'verify' ? 'selected' : ''}`"
             @click="selectFlow('verify')"
           >
-            <div class="card-icon">✓</div>
+            <div class="card-icon">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <h3>Verify Phone Number</h3>
             <p>Verify if phone matches SIM card through carrier network</p>
           </div>
@@ -61,7 +88,12 @@
             :class="`card ${selectedFlow === 'get' ? 'selected' : ''}`"
             @click="selectFlow('get')"
           >
-            <div class="card-icon">📲</div>
+            <div class="card-icon">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+                <rect x="7" y="4" width="10" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                <line x1="10" y1="17" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
             <h3>Get Phone Number</h3>
             <p>Retrieve phone number from SIM card with carrier verification</p>
           </div>
@@ -71,7 +103,11 @@
       <!-- Phone Input Section (only for verify flow) -->
       <section v-if="selectedFlow === 'verify'" class="section">
         <div class="section-header">
-          <div class="section-icon">📞</div>
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
           <div class="section-title">
             <h2>Phone Number to Verify</h2>
             <p>Enter the number you want to verify against the SIM card</p>
@@ -79,11 +115,11 @@
         </div>
 
         <div class="input-group">
-            <input
+          <input
             v-model="phoneInput"
-              type="tel"
+            type="tel"
             placeholder="+1 555 123 4567"
-            @keydown.enter="flowMode === 'highlevel' ? startAuthentication() : startGranularFlow()"
+            @keydown.enter="flowMode === 'highlevel' ? startAuthentication() : executeStepOne()"
           />
         </div>
       </section>
@@ -91,7 +127,11 @@
       <!-- High-Level Flow -->
       <section v-if="flowMode === 'highlevel'" class="section">
         <div class="section-header">
-          <div class="section-icon">🚀</div>
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
           <div class="section-title">
             <h2>Start Authentication</h2>
             <p>Click below to initiate the authentication flow</p>
@@ -100,10 +140,10 @@
 
         <button 
           @click="startAuthentication"
-          :disabled="loading || (selectedFlow === 'verify' && !phoneInput)"
-          :class="['action-button', { 'loading': loading }]"
+          :disabled="isLoading || (selectedFlow === 'verify' && !phoneInput)"
+          :class="['action-button', { 'loading': isLoading }]"
         >
-          <span v-if="!loading">
+          <span v-if="!isLoading">
             {{ selectedFlow === 'verify' ? 'Verify Phone Number' : 'Get Phone Number' }}
           </span>
           <span v-else>Processing...</span>
@@ -123,16 +163,19 @@
           <h3>✅ Authentication Successful!</h3>
           <div class="result-details">
             <p><strong>Phone Number:</strong> {{ result.phone_number }}</p>
-            <p><strong>Verified:</strong> {{ selectedFlow === 'verify' && 'verified' in result ? (result.verified ? 'Yes' : 'No') : 'Yes' }}</p>
-            <p v-if="result.aud"><strong>Audience:</strong> {{ result.aud }}</p>
-            </div>
-            </div>
+            <p v-if="'verified' in result"><strong>Verified:</strong> {{ result.verified ? 'Yes' : 'No' }}</p>
+          </div>
+        </div>
       </section>
 
       <!-- Granular Flow -->
       <section v-else-if="flowMode === 'granular'" class="section">
         <div class="section-header">
-          <div class="section-icon">🔧</div>
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
           <div class="section-title">
             <h2>Granular Authentication Steps</h2>
             <p>Control each step of the authentication process</p>
@@ -149,11 +192,11 @@
             <span class="step-number">1</span>
             <h4>Prepare Authentication</h4>
           </div>
-          <p>Initialize the authentication session with the server</p>
+          <p>Initialize the session using <code>prepare()</code></p>
           
           <button 
             @click="executeStepOne"
-            :disabled="stepOneResp !== null || loading || (selectedFlow === 'verify' && !phoneInput)"
+            :disabled="stepOneResp !== null || isLoading || (selectedFlow === 'verify' && !phoneInput)"
             class="step-button"
           >
             {{ stepOneResp ? '✓ Completed' : 'Execute Step' }}
@@ -167,7 +210,7 @@
           </div>
         </div>
 
-        <!-- Step 2: Browser Verification -->
+        <!-- Step 2: Invoke Secure Prompt -->
         <div :class="['step-card', { 
           'active': currentStep === 2,
           'completed': stepTwoResp !== null,
@@ -178,11 +221,11 @@
             <span class="step-number">2</span>
             <h4>Browser Verification</h4>
           </div>
-          <p>Invoke secure browser prompt for carrier verification</p>
+          <p>Invoke secure prompt using <code>invokeSecurePrompt()</code></p>
           
           <button 
             @click="executeStepTwo"
-            :disabled="!stepOneResp || stepTwoResp !== null || loading"
+            :disabled="!stepOneResp || stepTwoResp !== null || isLoading"
             class="step-button"
           >
             {{ stepTwoResp ? '✓ Completed' : 'Execute Step' }}
@@ -207,11 +250,11 @@
             <span class="step-number">3</span>
             <h4>Process Verification</h4>
           </div>
-          <p>Send credential to server for final verification</p>
+          <p>Process using <code>{{ selectedFlow === 'verify' ? 'verifyPhoneNumber()' : 'getPhoneNumber()' }}</code></p>
           
           <button 
             @click="executeStepThree"
-            :disabled="!stepTwoResp || stepThreeResp !== null || loading"
+            :disabled="!stepTwoResp || stepThreeResp !== null || isLoading"
             class="step-button"
           >
             {{ stepThreeResp ? '✓ Completed' : 'Execute Step' }}
@@ -221,12 +264,12 @@
             ✓ Verification complete! Phone: {{ stepThreeResp.phone_number }}
             <span v-if="'verified' in stepThreeResp">
               - Verified: {{ stepThreeResp.verified ? 'Yes' : 'No' }}
-              </span>
-            </div>
+            </span>
+          </div>
           <div v-if="stepThreeError" class="step-error">
             {{ stepThreeError }}
-              </div>
-            </div>
+          </div>
+        </div>
 
         <!-- Reset Button -->
         <button 
@@ -242,8 +285,7 @@
           <h3>✅ Authentication Successful!</h3>
           <div class="result-details">
             <p><strong>Phone Number:</strong> {{ stepThreeResp.phone_number }}</p>
-            <p><strong>Verified:</strong> {{ 'verified' in stepThreeResp ? (stepThreeResp.verified ? 'Yes' : 'No') : 'Yes' }}</p>
-            <p v-if="stepThreeResp.aud"><strong>Audience:</strong> {{ stepThreeResp.aud }}</p>
+            <p v-if="'verified' in stepThreeResp"><strong>Verified:</strong> {{ stepThreeResp.verified ? 'Yes' : 'No' }}</p>
           </div>
         </div>
       </section>
@@ -259,7 +301,12 @@
       <!-- Debug Console -->
       <section v-if="debugMode && debugLogs.length > 0" class="section">
         <div class="section-header">
-          <div class="section-icon">🔍</div>
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+              <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
           <div class="section-title">
             <h2>Debug Console</h2>
             <p>Detailed flow information</p>
@@ -284,23 +331,89 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { PhoneAuthClient, UseCase } from 'glide-web-client-sdk'
-import type { 
-  PhoneAuthOptions, 
-  PrepareResponse, 
-  SecureCredentialResponse,
-  GetPhoneNumberResponse,
-  VerifyPhoneNumberResponse
-} from 'glide-web-client-sdk'
+import { ref, reactive, watch, computed } from 'vue'
+// Use the /vue adapter with usePhoneAuth composable
+import { usePhoneAuth, USE_CASE } from '@glideidentity/web-client-sdk/vue'
+import type { PrepareResponse, InvokeResult, InvokeOptions } from '@glideidentity/web-client-sdk/vue'
 
-// State management
+// SDK Configuration state
+const showSdkConfig = ref(false)
+const sdkConfig = reactive({
+  pollingInterval: 2000,
+  maxPollingAttempts: 30,
+  modalTheme: 'auto',
+  viewMode: 'toggle',
+  title: '',
+  description: '',
+  showCloseButton: true,
+  closeOnBackdrop: true,
+  closeOnEscape: true,
+})
+
+const defaultSdkConfig = {
+  pollingInterval: 2000,
+  maxPollingAttempts: 30,
+  modalTheme: 'auto',
+  viewMode: 'toggle',
+  title: '',
+  description: '',
+  showCloseButton: true,
+  closeOnBackdrop: true,
+  closeOnEscape: true,
+}
+
+// SDK Config handlers
+const applySdkConfig = (newConfig: typeof sdkConfig) => {
+  Object.assign(sdkConfig, newConfig)
+  addDebugLog('info', 'SDK configuration applied', newConfig)
+}
+
+const resetSdkConfig = () => {
+  Object.assign(sdkConfig, defaultSdkConfig)
+  addDebugLog('info', 'SDK configuration reset to defaults')
+}
+
+// Initialize usePhoneAuth composable with config
+// The composable provides reactive state and methods
+const {
+  isLoading,
+  error,
+  result,
+  step,
+  isSupported,
+  authenticate,
+  prepare,
+  invokeSecurePrompt,
+  getPhoneNumber,
+  verifyPhoneNumber,
+  reset,
+  client
+} = usePhoneAuth({
+  endpoints: {
+    prepare: '/api/phone-auth/prepare',
+    process: '/api/phone-auth/process',
+    /*
+     * Polling Endpoint Configuration
+     * OPTIONS:
+     * 1. USE PROXY (recommended): '/api/phone-auth/status'
+     *    - Routes through your backend server
+     *    - Better for debugging (see requests in server logs)
+     *    - Avoids CORS issues
+     * 2. GO DIRECT: Comment out the 'polling' line below
+     *    - SDK will call Glide Magic Auth server directly
+     *    - Requires proper CORS configuration
+     */
+    // polling: '/api/phone-auth/status',
+  },
+  debug: true,
+  pollingInterval: sdkConfig.pollingInterval,
+  maxPollingAttempts: sdkConfig.maxPollingAttempts,
+})
+
+// Local UI state
 const flowMode = ref<'highlevel' | 'granular'>('highlevel')
 const selectedFlow = ref<'verify' | 'get'>('verify')
 const phoneInput = ref('')
-const loading = ref(false)
-const error = ref<{ code?: string; message: string } | null>(null)
-const result = ref<GetPhoneNumberResponse | VerifyPhoneNumberResponse | null>(null)
 const debugMode = ref(false)
 const debugLogs = ref<Array<{
   timestamp: string
@@ -312,71 +425,50 @@ const debugLogs = ref<Array<{
 // Granular flow state
 const currentStep = ref(0)
 const stepOneResp = ref<PrepareResponse | null>(null)
-const stepTwoResp = ref<SecureCredentialResponse['vp_token'] | null>(null)
-const stepThreeResp = ref<GetPhoneNumberResponse | VerifyPhoneNumberResponse | null>(null)
+const stepTwoResp = ref<InvokeResult | null>(null)
+const stepThreeResp = ref<any>(null)
 const stepOneError = ref<string | null>(null)
 const stepTwoError = ref<string | null>(null)
 const stepThreeError = ref<string | null>(null)
 
-// PhoneAuthClient instance
-let authClient: PhoneAuthClient | null = null
-
-// Initialize client on mount
-onMounted(() => {
-  authClient = new PhoneAuthClient({
-  endpoints: {
-      prepare: '/api/phone-auth/prepare',
-      process: '/api/phone-auth/process'
-  },
-    debug: true, // Enable SDK debug logging to console
-    timeout: 30000,
-  onCrossDeviceDetected: () => {
-      addDebugLog('info', 'Cross-device authentication detected (QR code shown)')
-    },
-    onRetryAttempt: (attempt, maxAttempts) => {
-      addDebugLog('info', `Retry attempt ${attempt} of ${maxAttempts}`)
-    }
-  })
-  addDebugLog('info', 'PhoneAuthClient initialized with debug mode', { endpoints: '/api/phone-auth/*' })
+// Get invoke options from config
+const getInvokeOptions = (): InvokeOptions => ({
+  modalOptions: {
+    theme: sdkConfig.modalTheme as 'auto' | 'dark' | 'light',
+    viewMode: sdkConfig.viewMode as 'toggle' | 'dual' | 'pre-step',
+    title: sdkConfig.title || undefined,
+    description: sdkConfig.description || undefined,
+    showCloseButton: sdkConfig.showCloseButton,
+    closeOnBackdropClick: sdkConfig.closeOnBackdrop,
+    closeOnEscape: sdkConfig.closeOnEscape,
+  }
 })
 
 // Debug logging helper
 const addDebugLog = (type: 'info' | 'error' | 'success', message: string, data?: any) => {
-  if (debugMode.value) {
-    debugLogs.value.push({
-      timestamp: new Date().toLocaleTimeString(),
-      type,
-      message,
-      data
-    })
-  }
+  debugLogs.value.push({
+    timestamp: new Date().toLocaleTimeString(),
+    type,
+    message,
+    data
+  })
 }
 
 // Flow selection handler
 const selectFlow = (flow: 'verify' | 'get') => {
   selectedFlow.value = flow
   phoneInput.value = ''
-  error.value = null
-  result.value = null
+  reset()
   resetGranularFlow()
   addDebugLog('info', `Flow type changed to: ${flow}`)
 }
 
-// High-level authentication
+// High-level authentication using authenticate()
 const startAuthentication = async () => {
-  if (!authClient) {
-    error.value = { code: 'NO_CLIENT', message: 'Authentication client not initialized' }
-    return
-  }
-
   if (selectedFlow.value === 'verify' && !phoneInput.value) {
-    error.value = { code: 'MISSING_PHONE', message: 'Please enter a phone number to verify' }
+    addDebugLog('error', 'Missing phone number')
     return
   }
-
-  loading.value = true
-  error.value = null
-  result.value = null
 
   try {
     addDebugLog('info', 'Starting authentication', { 
@@ -384,129 +476,81 @@ const startAuthentication = async () => {
       phone: selectedFlow.value === 'verify' ? phoneInput.value : undefined 
     })
 
-    const options: PhoneAuthOptions = {
-      use_case: selectedFlow.value === 'get' ? UseCase.GET_PHONE_NUMBER : UseCase.VERIFY_PHONE_NUMBER,
+    const response = await authenticate({
+      use_case: selectedFlow.value === 'get' ? USE_CASE.GET_PHONE_NUMBER : USE_CASE.VERIFY_PHONE_NUMBER,
       phone_number: selectedFlow.value === 'verify' ? phoneInput.value : undefined,
-      plmn: selectedFlow.value === 'get' ? { mcc: '310', mnc: '260' } : undefined, // T-Mobile USA for GetPhoneNumber
-      consent_data: {
-        consent_text: 'I agree to verify my phone number',
-        policy_link: 'https://example.com/privacy',
-        policy_text: 'Privacy Policy'
-      }
-    }
-
-    const response = selectedFlow.value === 'get' 
-      ? await authClient.getPhoneNumberComplete(options)
-      : await authClient.verifyPhoneNumberComplete(phoneInput.value, options)
-    result.value = response
+    }, getInvokeOptions())
+    
     addDebugLog('success', 'Authentication successful', response)
   } catch (err: any) {
-    error.value = { 
-      code: err.code || 'UNKNOWN_ERROR',
-      message: err.message || 'An unexpected error occurred'
-    }
     addDebugLog('error', 'Authentication failed', err)
-  } finally {
-    loading.value = false
   }
 }
 
 // Granular flow functions
-const startGranularFlow = () => {
-  currentStep.value = 1
-  resetGranularFlow()
-}
-
 const executeStepOne = async () => {
-  if (!authClient) {
-    stepOneError.value = 'Authentication client not initialized'
-    return
-  }
-
-  loading.value = true
   stepOneError.value = null
   currentStep.value = 1
 
   try {
     addDebugLog('info', 'Step 1: Preparing authentication')
 
-    const options: PhoneAuthOptions = {
-      use_case: selectedFlow.value === 'get' ? UseCase.GET_PHONE_NUMBER : UseCase.VERIFY_PHONE_NUMBER,
+    const response = await prepare({
+      use_case: selectedFlow.value === 'get' ? USE_CASE.GET_PHONE_NUMBER : USE_CASE.VERIFY_PHONE_NUMBER,
       phone_number: selectedFlow.value === 'verify' ? phoneInput.value : undefined,
-      plmn: selectedFlow.value === 'get' ? { mcc: '310', mnc: '260' } : undefined, // T-Mobile USA for GetPhoneNumber
-      consent_data: {
-        consent_text: 'I agree to verify my phone number',
-        policy_link: 'https://example.com/privacy',
-        policy_text: 'Privacy Policy'
-      }
-    }
-
-    console.log('[Granular] Step 1: Preparing with options:', options)
-    const response = await authClient.preparePhoneRequest(options)
-    console.log('[Granular] Step 1: Prepare response:', response)
+    })
+    
     stepOneResp.value = response
     currentStep.value = 2
-    addDebugLog('success', 'Step 1 completed', response)
+    addDebugLog('success', 'Step 1 completed', { strategy: response.authentication_strategy })
   } catch (err: any) {
-    console.error('[Granular] Step 1: Error during prepare:', err)
     stepOneError.value = err.message || 'Failed to prepare authentication'
     addDebugLog('error', 'Step 1 failed', err)
-  } finally {
-    loading.value = false
   }
 }
 
 const executeStepTwo = async () => {
-  if (!authClient || !stepOneResp.value) return
+  if (!stepOneResp.value) return
 
-  loading.value = true
   stepTwoError.value = null
   currentStep.value = 2
 
   try {
     addDebugLog('info', 'Step 2: Invoking secure browser prompt')
-    console.log('[Granular] Step 2: About to invoke secure prompt with:', stepOneResp.value)
     
-    const credential = await authClient.invokeSecurePrompt(stepOneResp.value)
-    console.log('[Granular] Step 2: Received credential:', credential)
-    stepTwoResp.value = credential
+    const invokeResult = await invokeSecurePrompt(stepOneResp.value, getInvokeOptions())
+    
+    stepTwoResp.value = invokeResult
     currentStep.value = 3
-    addDebugLog('success', 'Step 2 completed', credential)
+    addDebugLog('success', 'Step 2 completed', { strategy: invokeResult.strategy })
   } catch (err: any) {
-    console.error('[Granular] Step 2: Error during secure prompt:', err)
     stepTwoError.value = err.message || 'Browser verification failed'
     addDebugLog('error', 'Step 2 failed', err)
-  } finally {
-    loading.value = false
   }
 }
 
 const executeStepThree = async () => {
-  if (!authClient || !stepOneResp.value || !stepTwoResp.value) return
+  if (!stepOneResp.value || !stepTwoResp.value) return
 
-  loading.value = true
   stepThreeError.value = null
   currentStep.value = 3
 
   try {
     addDebugLog('info', 'Step 3: Processing verification')
-    console.log('[Granular] Step 3: Processing with credential:', stepTwoResp.value)
-    console.log('[Granular] Step 3: Using session:', stepOneResp.value.session)
+    
+    // Wait for the credential from the invoke result
+    const credential = await stepTwoResp.value.credential
     
     const response = selectedFlow.value === 'get'
-      ? await authClient.getPhoneNumber(stepTwoResp.value, stepOneResp.value.session)
-      : await authClient.verifyPhoneNumber(stepTwoResp.value, stepOneResp.value.session)
+      ? await getPhoneNumber(credential, stepTwoResp.value.session)
+      : await verifyPhoneNumber(credential, stepTwoResp.value.session)
     
-    console.log('[Granular] Step 3: Final response:', response)
     stepThreeResp.value = response
     currentStep.value = 0
     addDebugLog('success', 'Step 3 completed', response)
   } catch (err: any) {
-    console.error('[Granular] Step 3: Error during processing:', err)
     stepThreeError.value = err.message || 'Verification processing failed'
     addDebugLog('error', 'Step 3 failed', err)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -520,6 +564,9 @@ const resetGranularFlow = () => {
   stepThreeError.value = null
   addDebugLog('info', 'Granular flow reset')
 }
+
+// Initialize debug log
+addDebugLog('info', 'usePhoneAuth composable initialized')
 </script>
 
 <style scoped>
@@ -536,6 +583,7 @@ const resetGranularFlow = () => {
   padding: 60px 20px;
   background: linear-gradient(180deg, #1d1d1f 0%, #2d2d30 100%);
   color: white;
+  position: relative;
 }
 
 .header-brand {
@@ -574,6 +622,32 @@ const resetGranularFlow = () => {
   margin: 0 auto;
 }
 
+/* SDK Config Button */
+.sdk-config-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sdk-config-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sdk-config-btn span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* Mode Toggle Section */
 .mode-toggle-section {
   text-align: center;
@@ -584,34 +658,28 @@ const resetGranularFlow = () => {
 .mode-toggle {
   display: inline-flex;
   gap: 0;
-  border: 2px solid #007AFF;
+  border: 1.5px solid #e5e7eb;
   border-radius: 50px;
   padding: 4px;
   background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .mode-btn {
   padding: 10px 24px;
   border: none;
   background: transparent;
-  color: #007AFF;
+  color: #6b7280;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   border-radius: 50px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mode-btn.active {
-  background: #007AFF;
+  background: rgba(17, 24, 39, 0.9);
   color: white;
-}
-
-.mode-icon {
-  font-size: 14px;
 }
 
 .mode-description {
@@ -637,8 +705,21 @@ const resetGranularFlow = () => {
 }
 
 .section-icon {
-  font-size: 28px;
-  line-height: 1;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e5e5e7;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  font-size: 24px;
+  color: #1d1d1f;
+}
+
+.section-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .section-title h2 {
@@ -665,28 +746,42 @@ const resetGranularFlow = () => {
 
 /* Cards */
 .card {
-  padding: 20px;
-  border: 2px solid #e5e5e7;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   background: white;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
 .card:hover {
-  border-color: #007AFF;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .card.selected {
   border-color: #007AFF;
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.05), rgba(0, 122, 255, 0.1));
+  box-shadow: 0 12px 24px rgba(0, 122, 255, 0.15);
 }
 
 .card-icon {
+  width: 64px;
+  height: 64px;
+  background: #f5f5f7;
+  border-radius: 16px;
+  border: 1px solid #e5e5e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
   font-size: 32px;
-  margin-bottom: 10px;
+  color: #6b7280;
+}
+
+.card-icon svg {
+  width: 32px;
+  height: 32px;
 }
 
 .card h3 {
@@ -725,28 +820,32 @@ const resetGranularFlow = () => {
 .action-button {
   width: 100%;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(17, 24, 39, 0.9);
+  backdrop-filter: blur(10px);
   color: white;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
 }
 
 .action-button:hover:not(:disabled) {
+  background: rgba(17, 24, 39, 0.95);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .action-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: rgba(107, 114, 128, 0.3);
 }
 
 .action-button.loading {
-  background: #86868b;
+  background: rgba(107, 114, 128, 0.3);
 }
 
 /* Step Cards */
@@ -790,12 +889,14 @@ const resetGranularFlow = () => {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #007AFF;
+  background: rgba(17, 24, 39, 0.9);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .step-card.completed .step-number {
@@ -818,62 +919,79 @@ const resetGranularFlow = () => {
   font-size: 14px;
 }
 
+.step-card code {
+  background: #f0f0f5;
+  color: #007AFF;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
 .step-button {
   padding: 10px 20px;
-  background: #007AFF;
+  background: rgba(17, 24, 39, 0.9);
+  backdrop-filter: blur(10px);
   color: white;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .step-button:hover:not(:disabled) {
-  background: #0051d5;
+  background: rgba(17, 24, 39, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .step-button:disabled {
-  background: #86868b;
+  background: rgba(107, 114, 128, 0.3);
   cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.5;
 }
 
 .step-success {
   margin-top: 12px;
   padding: 10px;
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 6px;
-  color: #155724;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e6f7ed 100%);
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  color: #166534;
   font-size: 14px;
 }
 
 .step-error {
   margin-top: 12px;
   padding: 10px;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 6px;
-  color: #721c24;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  color: #991b1b;
   font-size: 14px;
 }
 
 .reset-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background: #ff3b30;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .reset-button:hover {
-  background: #d70015;
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* Result Display */
@@ -1034,5 +1152,12 @@ const resetGranularFlow = () => {
 
 .clear-logs-button:hover {
   background: #d70015;
+}
+
+/* Mobile responsiveness for SDK config button */
+@media (max-width: 480px) {
+  .sdk-config-btn span {
+    display: none;
+  }
 }
 </style>

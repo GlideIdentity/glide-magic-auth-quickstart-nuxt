@@ -1,9 +1,4 @@
-import { GlideClient } from 'glide-sdk'
-import type { LogFormat } from 'glide-sdk'
-import dotenv from 'dotenv'
-
-// Load environment variables once
-dotenv.config()
+import { GlideClient, LogFormat } from '@glideidentity/glide-sdk'
 
 // Create a singleton instance of the Glide client
 let glideClient: GlideClient | null = null
@@ -28,16 +23,13 @@ export function getGlideClient(): GlideClient | null {
   // Create and cache the client instance
   glideClient = new GlideClient({
     apiKey: apiKey,
-    internal: {
-      apiBaseUrl: process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app',
-      authBaseUrl: process.env.GLIDE_AUTH_BASE_URL || 'https://oidc.gateway-x.io'
-    },
-    // Clean configuration - SDK handles the priority correctly
     debug: process.env.GLIDE_DEBUG === 'true',
-    logFormat: (process.env.GLIDE_LOG_FORMAT as LogFormat) || 'pretty'
+    logFormat: (process.env.GLIDE_LOG_FORMAT as LogFormat) || 'pretty',
+    // Only set devEnv if explicitly provided
+    ...(process.env.GLIDE_DEV_ENV && { devEnv: process.env.GLIDE_DEV_ENV }),
   })
 
-  console.log('Glide client initialized (singleton)')
+  console.log('✅ Glide client initialized')
   return glideClient
 }
 

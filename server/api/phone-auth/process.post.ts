@@ -1,85 +1,59 @@
-import { 
-  MagicAuthError,
-  MagicAuthErrorCode,
-  UseCase
-} from 'glide-sdk'
-import type {
-  GetPhoneNumberRequest,
-  GetPhoneNumberResponse,
-  VerifyPhoneNumberRequest,
-  VerifyPhoneNumberResponse
-} from 'glide-sdk'
-// Import web SDK types for request body (they include use_case)
-import type {
-  GetPhoneNumberRequest as WebGetPhoneNumberRequest,
-  VerifyPhoneNumberRequest as WebVerifyPhoneNumberRequest
-} from 'glide-web-client-sdk'
 import { getGlideClient } from '~/server/utils/glideClient'
 
-
-
 export default defineEventHandler(async (event) => {
-  // Get the shared client instance
   const glide = getGlideClient()
   
-  // Check if local server is configured
   if (!glide) {
     setResponseStatus(event, 503)
     return {
-      error: MagicAuthErrorCode.SERVICE_UNAVAILABLE,
-      message: 'Local server is not configured. Please set GLIDE_API_KEY environment variable or use the external server option.',
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Server not configured. Please set GLIDE_API_KEY environment variable.',
       status: 503,
-      timestamp: new Date().toISOString(),
-      details: {
-        hasApiKey: !!process.env.GLIDE_API_KEY
-      }
     }
   }
 
   try {
-    // Get typed request body - will be either GetPhoneNumberRequest or VerifyPhoneNumberRequest
-    // from the web SDK, both of which include use_case
-    const body = await readBody<WebGetPhoneNumberRequest | WebVerifyPhoneNumberRequest>(event)
+    const body = await readBody(event)
     
-    // Determine which SDK method to call based on use_case
-    // The Node SDK methods automatically add use_case internally
-    if (body.use_case === UseCase.GET_PHONE_NUMBER) {
-      const requestParams: GetPhoneNumberRequest = {
+    console.log('🔄 Process request:', { use_case: body.use_case })
+    
+    // Determine which method to call based on use_case
+    let result
+    if (body.use_case === 'GetPhoneNumber') {
+      result = await glide.magicAuth.getPhoneNumber({
         session: body.session,
-        credential: body.credential
-        // Node SDK automatically adds use_case internally
-      }
-      const result = await glide.magicAuth.getPhoneNumber(requestParams)
-      return result
-    } else if (body.use_case === UseCase.VERIFY_PHONE_NUMBER) {
-      const requestParams: VerifyPhoneNumberRequest = {
-        session: body.session,
-        credential: body.credential
-        // Node SDK automatically adds use_case internally
-      }
-      const result = await glide.magicAuth.verifyPhoneNumber(requestParams)
-      return result
-    } else {
-      // This should never happen as the union types enforce valid use_case values
-      throw new MagicAuthError({
-        code: MagicAuthErrorCode.VALIDATION_ERROR,
-        message: `Invalid use_case. Must be '${UseCase.GET_PHONE_NUMBER}' or '${UseCase.VERIFY_PHONE_NUMBER}'`,
-        status: 400
+        credential: body.credential,
       })
-    }
-  } catch (error) {
-    if (error instanceof MagicAuthError) {
-      // MagicAuthError already has the correct format - just pass it through
-      setResponseStatus(event, error.status || 500)
-      return error
+    } else if (body.use_case === 'VerifyPhoneNumber') {
+      result = await glide.magicAuth.verifyPhoneNumber({
+        session: body.session,
+        credential: body.credential,
+      })
+    } else {
+      setResponseStatus(event, 400)
+      return {
+        error: 'INVALID_USE_CASE',
+        message: `Invalid use_case: ${body.use_case}`,
+        status: 400,
+      }
     }
     
-    // For unexpected errors, return a simple error response
-    setResponseStatus(event, 500)
-    return { 
-      error: MagicAuthErrorCode.INTERNAL_SERVER_ERROR,
-      message: error instanceof Error ? error.message : 'An unexpected error occurred',
-      status: 500
+    console.log('✅ Process success:', { 
+      phone_number: result.phone_number ? '***' + result.phone_number.slice(-4) : undefined,
+      verified: 'verified' in result ? result.verified : undefined
+    })
+    
+    return result
+  } catch (error: any) {
+    console.error('❌ Process error:', error)
+    
+    // Pass through server errors as-is
+    const status = error.status || 500
+    setResponseStatus(event, status)
+    return {
+      error: error.code || 'INTERNAL_ERROR',
+      message: error.message || 'An unexpected error occurred',
+      status,
     }
   }
 })
