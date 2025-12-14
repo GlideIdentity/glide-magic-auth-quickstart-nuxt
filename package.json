@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@glideidentity/glide-sdk": "^5.4.0",
-    "@glideidentity/web-client-sdk": "file:../web-client-sdk",
+    "@glideidentity/web-client-sdk": "^6.0.0-beta.2",
     "nuxt": "^3.11.0",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
