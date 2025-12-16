@@ -1,0 +1,41 @@
+import { GlideClient, LogFormat } from '@glideidentity/glide-sdk'
+
+// Create a singleton instance of the Glide client
+let glideClient: GlideClient | null = null
+
+/**
+ * Get or create the shared Glide client instance
+ * This ensures we only create one client for the entire server
+ */
+export function getGlideClient(): GlideClient | null {
+  // Return existing client if already initialized
+  if (glideClient) {
+    return glideClient
+  }
+
+  // Check if we have an API key
+  const apiKey = process.env.GLIDE_API_KEY
+  if (!apiKey) {
+    console.warn('GLIDE_API_KEY not found in environment variables')
+    return null
+  }
+
+  // Create and cache the client instance
+  glideClient = new GlideClient({
+    apiKey: apiKey,
+    debug: process.env.GLIDE_DEBUG === 'true',
+    logFormat: (process.env.GLIDE_LOG_FORMAT as LogFormat) || 'pretty',
+    // Only set devEnv if explicitly provided
+    ...(process.env.GLIDE_DEV_ENV && { devEnv: process.env.GLIDE_DEV_ENV }),
+  })
+
+  console.log('✅ Glide client initialized')
+  return glideClient
+}
+
+/**
+ * Check if the Glide client is configured
+ */
+export function isGlideConfigured(): boolean {
+  return !!process.env.GLIDE_API_KEY
+}

@@ -1,39 +1,29 @@
-import { GlideClient } from 'glide-sdk'
+import { getGlideClient, isGlideConfigured } from '~/server/utils/glideClient'
 
+// Health check endpoint response type
+// This is a custom endpoint, not an SDK type
 interface HealthCheckResponse {
   status: string
   glideInitialized: boolean
   glideProperties: string[]
   env: {
-    hasClientId: boolean
-    hasClientSecret: boolean
+    hasApiKey: boolean
+    apiBaseUrl: string
   }
   mode: 'local' | 'external'
 }
 
-// Initialize Glide client only if credentials are available
-let glide: GlideClient | null = null
-try {
-  if (process.env.GLIDE_CLIENT_ID && process.env.GLIDE_CLIENT_SECRET) {
-    glide = new GlideClient({
-      clientId: process.env.GLIDE_CLIENT_ID,
-      clientSecret: process.env.GLIDE_CLIENT_SECRET
-    })
-  }
-} catch (error) {
-  console.warn('Failed to initialize GlideClient:', error)
-}
-
 export default defineEventHandler(async (event): Promise<HealthCheckResponse> => {
-  const hasCredentials = !!(process.env.GLIDE_CLIENT_ID && process.env.GLIDE_CLIENT_SECRET)
+  const glide = getGlideClient()
+  const hasCredentials = isGlideConfigured()
   
   return {
     status: 'ok',
     glideInitialized: !!glide,
     glideProperties: glide ? Object.keys(glide) : [],
     env: {
-      hasClientId: !!process.env.GLIDE_CLIENT_ID,
-      hasClientSecret: !!process.env.GLIDE_CLIENT_SECRET
+      hasApiKey: hasCredentials,
+      apiBaseUrl: process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app'
     },
     mode: hasCredentials ? 'local' : 'external'
   }
