@@ -406,8 +406,8 @@ const {
     // polling: '/api/phone-auth/status',
   },
   debug: true,
-  pollingInterval: sdkConfig.pollingInterval,
-  maxPollingAttempts: sdkConfig.maxPollingAttempts,
+  // Note: pollingInterval and maxPollingAttempts are passed via getInvokeOptions()
+  // so they can be changed dynamically without page refresh
 })
 
 // Local UI state
@@ -431,8 +431,11 @@ const stepOneError = ref<string | null>(null)
 const stepTwoError = ref<string | null>(null)
 const stepThreeError = ref<string | null>(null)
 
-// Get invoke options from config
+// Get invoke options from config (read dynamically so changes take effect immediately)
 const getInvokeOptions = (): InvokeOptions => ({
+  // Polling options - read from config each time so changes take effect without refresh
+  pollingInterval: sdkConfig.pollingInterval,
+  maxPollingAttempts: sdkConfig.maxPollingAttempts,
   modalOptions: {
     theme: sdkConfig.modalTheme as 'auto' | 'dark' | 'light',
     viewMode: sdkConfig.viewMode as 'toggle' | 'dual' | 'pre-step',
