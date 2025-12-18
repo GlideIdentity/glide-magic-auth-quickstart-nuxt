@@ -582,6 +582,7 @@ addDebugLog('info', 'usePhoneAuth composable initialized')
 
 /* Header Styles */
 .header {
+  position: relative;
   text-align: center;
   padding: 60px 20px;
   background: linear-gradient(180deg, #1d1d1f 0%, #2d2d30 100%);
@@ -630,6 +631,8 @@ addDebugLog('info', 'usePhoneAuth composable initialized')
   position: absolute;
   top: 20px;
   right: 20px;
+  left: auto;
+  width: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1157,10 +1160,87 @@ addDebugLog('info', 'usePhoneAuth composable initialized')
   background: #d70015;
 }
 
-/* Mobile responsiveness for SDK config button */
-@media (max-width: 480px) {
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header {
+    padding: 40px 20px;
+  }
+  
+  .header h1 {
+    font-size: 32px;
+  }
+  
+  .header p {
+    font-size: 17px;
+  }
+  
+  .header-company {
+    font-size: 18px;
+  }
+  
+  .container {
+    padding: 15px;
+  }
+  
+  .sdk-config-btn {
+    padding: 8px 12px;
+    top: 15px;
+    right: 15px;
+  }
+  
   .sdk-config-btn span {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 30px 15px;
+  }
+  
+  .header h1 {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+  
+  .header p {
+    font-size: 15px;
+  }
+  
+  .header-brand {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .header-logo {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .header-company {
+    font-size: 16px;
+  }
+  
+  .sdk-config-btn {
+    padding: 8px;
+    top: 12px;
+    right: 12px;
+  }
+  
+  .section {
+    padding: 20px;
+  }
+  
+  .section-header h2 {
+    font-size: 18px;
+  }
+  
+  .card h3 {
+    font-size: 16px;
+  }
+  
+  .card p {
+    font-size: 13px;
   }
 }
 </style>
