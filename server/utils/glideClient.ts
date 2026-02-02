@@ -1,4 +1,5 @@
-import { GlideClient, LogFormat } from '@glideidentity/glide-sdk'
+import { GlideClient, LogLevel } from '@glideidentity/glide-be-sdk-node'
+import type { LogFormat } from '@glideidentity/glide-be-sdk-node'
 
 // Create a singleton instance of the Glide client
 let glideClient: GlideClient | null = null
@@ -13,20 +14,23 @@ export function getGlideClient(): GlideClient | null {
     return glideClient
   }
 
-  // Check if we have an API key
-  const apiKey = process.env.GLIDE_API_KEY
-  if (!apiKey) {
-    console.warn('GLIDE_API_KEY not found in environment variables')
+  // Check if we have OAuth2 credentials
+  const clientId = process.env.GLIDE_CLIENT_ID
+  const clientSecret = process.env.GLIDE_CLIENT_SECRET
+  
+  if (!clientId || !clientSecret) {
+    console.warn('GLIDE_CLIENT_ID and/or GLIDE_CLIENT_SECRET not found in environment variables')
     return null
   }
 
   // Create and cache the client instance
   glideClient = new GlideClient({
-    apiKey: apiKey,
-    debug: process.env.GLIDE_DEBUG === 'true',
-    logFormat: (process.env.GLIDE_LOG_FORMAT as LogFormat) || 'pretty',
-    // Only set devEnv if explicitly provided
-    ...(process.env.GLIDE_DEV_ENV && { devEnv: process.env.GLIDE_DEV_ENV }),
+    clientId,
+    clientSecret,
+    logLevel: LogLevel.DEBUG,
+    logFormat: (process.env.GLIDE_LOG_FORMAT as LogFormat) || 'text',
+    // Only set baseUrl if explicitly provided (defaults to production)
+    ...(process.env.GLIDE_API_BASE_URL && { baseUrl: process.env.GLIDE_API_BASE_URL }),
   })
 
   console.log('✅ Glide client initialized')
@@ -37,5 +41,5 @@ export function getGlideClient(): GlideClient | null {
  * Check if the Glide client is configured
  */
 export function isGlideConfigured(): boolean {
-  return !!process.env.GLIDE_API_KEY
+  return !!(process.env.GLIDE_CLIENT_ID && process.env.GLIDE_CLIENT_SECRET)
 }

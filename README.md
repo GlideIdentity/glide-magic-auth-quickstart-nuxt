@@ -8,9 +8,9 @@ Experience carrier-grade phone authentication in **2 minutes**. No SMS, no delay
 # Clone and install
 npm install
 
-# Copy environment file and add your API key
+# Copy environment file and add your OAuth2 credentials
 cp env.example .env
-# Then edit .env and replace 'your_api_key_here' with your actual API key
+# Then edit .env and add your GLIDE_CLIENT_ID and GLIDE_CLIENT_SECRET
 
 # Run it!
 npm run dev
@@ -47,27 +47,30 @@ magical-auth-quickstart-nuxt/
 │   └── SdkConfigPanel.vue     # SDK configuration panel
 ├── server/
 │   ├── api/phone-auth/
-│   │   ├── prepare.post.ts    # Step 1: Initialize
+│   │   ├── prepare.post.ts    # Step 1: Initialize session
+│   │   ├── invoke.post.ts     # Step 2: Report invocation (metrics)
 │   │   ├── process.post.ts    # Step 3: Get result
 │   │   └── status/
 │   │       └── [sessionId].get.ts  # Status polling proxy
 │   └── utils/
-│       └── glideClient.ts     # Glide SDK client setup
+│       ├── glideClient.ts     # Glide SDK client setup
+│       └── sessionStore.ts    # Session URL storage for polling
 ├── assets/css/
 │   └── main.css               # Global styles
 └── nuxt.config.ts             # Config (SSR disabled for Web APIs)
 ```
 
-## 🔧 Want Your Own API Key?
+## 🔧 Want Your Own Credentials?
 
 The quickstart works out-of-the-box with our demo server. To use your own credentials:
 
-1. Get your API key from [Glide Dashboard](https://docs.glideidentity.com/)
+1. Get your OAuth2 credentials from [Glide Dashboard](https://docs.glideidentity.com/)
 2. Create `.env` file:
 ```env
-GLIDE_API_KEY=your_api_key_here
+GLIDE_CLIENT_ID=your_client_id_here
+GLIDE_CLIENT_SECRET=your_client_secret_here
 ```
-3. Restart the app - it'll use your key automatically!
+3. Restart the app - it'll use your credentials automatically!
 
 ## 👀 See What's Happening
 

@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 503)
     return {
       error: 'SERVICE_UNAVAILABLE',
-      message: 'Server not configured. Please set GLIDE_API_KEY environment variable.',
+      message: 'Server not configured. Please set GLIDE_CLIENT_ID and GLIDE_CLIENT_SECRET environment variables.',
       status: 503,
     }
   }
@@ -20,12 +20,12 @@ export default defineEventHandler(async (event) => {
     // Determine which method to call based on use_case
     let result
     if (body.use_case === 'GetPhoneNumber') {
-      result = await glide.magicAuth.getPhoneNumber({
+      result = await glide.magicalAuth.getPhoneNumber({
         session: body.session,
         credential: body.credential,
       })
     } else if (body.use_case === 'VerifyPhoneNumber') {
-      result = await glide.magicAuth.verifyPhoneNumber({
+      result = await glide.magicalAuth.verifyPhoneNumber({
         session: body.session,
         credential: body.credential,
       })
@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
       error: error.code || 'INTERNAL_ERROR',
       message: error.message || 'An unexpected error occurred',
       status,
+      ...(error.details && { details: error.details }),
     }
   }
 })

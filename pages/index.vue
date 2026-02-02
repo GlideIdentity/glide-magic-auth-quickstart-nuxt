@@ -331,10 +331,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive } from 'vue'
 // Use the /vue adapter with usePhoneAuth composable
-import { usePhoneAuth, USE_CASE } from '@glideidentity/web-client-sdk/vue'
-import type { PrepareResponse, InvokeResult, InvokeOptions } from '@glideidentity/web-client-sdk/vue'
+import { usePhoneAuth, USE_CASE } from '@glideidentity/glide-fe-sdk-web/vue'
+import type { PrepareResponse, InvokeResult, InvokeOptions } from '@glideidentity/glide-fe-sdk-web/vue'
 
 // SDK Configuration state
 const showSdkConfig = ref(false)
@@ -379,18 +379,16 @@ const {
   isLoading,
   error,
   result,
-  step,
-  isSupported,
   authenticate,
   prepare,
   invokeSecurePrompt,
   getPhoneNumber,
   verifyPhoneNumber,
   reset,
-  client
 } = usePhoneAuth({
   endpoints: {
     prepare: '/api/phone-auth/prepare',
+    reportInvocation: '/api/phone-auth/invoke',
     process: '/api/phone-auth/process',
     /*
      * Polling Endpoint Configuration
@@ -403,11 +401,9 @@ const {
      *    - SDK will call Glide Magic Auth server directly
      *    - Requires proper CORS configuration
      */
-    // polling: '/api/phone-auth/status',
+    polling: '/api/phone-auth/status',
   },
   debug: true,
-  // Note: pollingInterval and maxPollingAttempts are passed via getInvokeOptions()
-  // so they can be changed dynamically without page refresh
 })
 
 // Local UI state
@@ -427,6 +423,7 @@ const currentStep = ref(0)
 const stepOneResp = ref<PrepareResponse | null>(null)
 const stepTwoResp = ref<InvokeResult | null>(null)
 const stepThreeResp = ref<any>(null)
+const stepTwoCredential = ref<string | null>(null) // Resolved credential from step 2
 const stepOneError = ref<string | null>(null)
 const stepTwoError = ref<string | null>(null)
 const stepThreeError = ref<string | null>(null)
@@ -521,19 +518,30 @@ const executeStepTwo = async () => {
   try {
     addDebugLog('info', 'Step 2: Invoking secure browser prompt')
     
-    const invokeResult = await invokeSecurePrompt(stepOneResp.value, getInvokeOptions())
+    const invokeResult = await invokeSecurePrompt(stepOneResp.value!, getInvokeOptions())
     
+    // For Desktop/Link strategies, the credential is obtained via polling
+    // We need to await it here to properly handle cancellation errors
+    addDebugLog('info', 'Waiting for credential...', { strategy: invokeResult.strategy })
+    const credential = await invokeResult.credential
+    
+    // Store the invoke result and credential separately
     stepTwoResp.value = invokeResult
+    stepTwoCredential.value = credential
     currentStep.value = 3
-    addDebugLog('success', 'Step 2 completed', { strategy: invokeResult.strategy })
+    addDebugLog('success', 'Step 2 completed - credential obtained', { 
+      strategy: invokeResult.strategy,
+      hasCredential: !!credential 
+    })
   } catch (err: any) {
     stepTwoError.value = err.message || 'Browser verification failed'
+    currentStep.value = 0 // Reset to allow retry
     addDebugLog('error', 'Step 2 failed', err)
   }
 }
 
 const executeStepThree = async () => {
-  if (!stepOneResp.value || !stepTwoResp.value) return
+  if (!stepOneResp.value || !stepTwoResp.value || !stepTwoCredential.value) return
 
   stepThreeError.value = null
   currentStep.value = 3
@@ -541,12 +549,12 @@ const executeStepThree = async () => {
   try {
     addDebugLog('info', 'Step 3: Processing verification')
     
-    // Wait for the credential from the invoke result
-    const credential = await stepTwoResp.value.credential
+    // Use the already-resolved credential from step 2
+    const credential = stepTwoCredential.value
     
     const response = selectedFlow.value === 'get'
-      ? await getPhoneNumber(credential, stepTwoResp.value.session)
-      : await verifyPhoneNumber(credential, stepTwoResp.value.session)
+      ? await getPhoneNumber(credential, stepTwoResp.value!.session)
+      : await verifyPhoneNumber(credential, stepTwoResp.value!.session)
     
     stepThreeResp.value = response
     currentStep.value = 0
@@ -561,6 +569,7 @@ const resetGranularFlow = () => {
   currentStep.value = 0
   stepOneResp.value = null
   stepTwoResp.value = null
+  stepTwoCredential.value = null
   stepThreeResp.value = null
   stepOneError.value = null
   stepTwoError.value = null
@@ -587,7 +596,6 @@ addDebugLog('info', 'usePhoneAuth composable initialized')
   padding: 60px 20px;
   background: linear-gradient(180deg, #1d1d1f 0%, #2d2d30 100%);
   color: white;
-  position: relative;
 }
 
 .header-brand {

@@ -4,10 +4,17 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false, // Disable SSR for Web Credentials API compatibility
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      title: 'Magical Auth Quick Start',
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/Glide-Logomark.svg' }
+      ]
+    }
+  },
   runtimeConfig: {
     // Private keys (only available on server-side)
-    glideApiKey: process.env.GLIDE_API_KEY,
-    glideApiBaseUrl: process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app',
+    // OAuth2 credentials are read directly from process.env in glideClient.ts
     glideDebug: process.env.GLIDE_DEBUG === 'true',
     // Public keys (exposed to client-side)
     public: {

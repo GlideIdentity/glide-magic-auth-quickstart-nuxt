@@ -1,18 +1,19 @@
 /**
  * Status Proxy Endpoint
  * 
- * This endpoint proxies status polling requests to the Glide Magic Auth API.
+ * Proxies status polling requests to the Glide Magical Auth API.
+ * Uses the status_url from the prepare response (stored server-side).
  * 
  * WHY USE A PROXY?
  * 1. Debugging: See polling requests in your server logs
  * 2. CORS: Avoid cross-origin issues in some environments
- * 3. Environment flexibility: Route to different Magic Auth servers
  * 
  * TO BYPASS THIS PROXY:
  * Comment out the 'polling' endpoint in your SDK config on the frontend.
- * The SDK will then call the Magic Auth server directly using the status_url
- * from the prepare response, or fall back to the production endpoint.
+ * The SDK will then call the Magical Auth status URL directly.
  */
+import { getStatusUrl } from '~/server/utils/sessionStore'
+
 export default defineEventHandler(async (event) => {
   const sessionId = getRouterParam(event, 'sessionId')
   
@@ -21,17 +22,24 @@ export default defineEventHandler(async (event) => {
     return { error: 'Missing session ID' }
   }
 
+  // Get the status URL that was stored during prepare
+  const statusUrl = getStatusUrl(sessionId)
+  
+  if (!statusUrl) {
+    console.warn(`[Status Proxy] No stored status URL for session: ${sessionId.substring(0, 8)}...`)
+    setResponseStatus(event, 404)
+    return { 
+      error: 'SESSION_NOT_FOUND',
+      message: 'Session not found. It may have expired or prepare was not called.'
+    }
+  }
+
   try {
-    const apiBaseUrl = process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app'
-    const statusUrl = `${apiBaseUrl}/public/status/${sessionId}`
-    
-    console.log(`[Status Proxy] Fetching status for session: ${sessionId}`)
-    console.log(`[Status Proxy] Using URL: ${statusUrl}`)
+    console.log(`[Status Proxy] Polling session: ${sessionId.substring(0, 8)}...`)
     
     const response = await fetch(statusUrl, {
       headers: {
         'Accept': 'application/json',
-        ...(process.env.GLIDE_DEV_ENV && { 'developer': process.env.GLIDE_DEV_ENV })
       }
     })
 
@@ -43,13 +51,12 @@ export default defineEventHandler(async (event) => {
     }
 
     const data = await response.json()
-    console.log(`[Status Proxy] Status response:`, { status: data.status })
+    console.log(`[Status Proxy] Status:`, data.status)
     
     return data
   } catch (error: any) {
-    console.error('[Status Proxy] Error:', error)
+    console.error('[Status Proxy] Error:', error.message)
     setResponseStatus(event, 500)
     return { error: 'Failed to check status', message: error.message }
   }
 })
-
