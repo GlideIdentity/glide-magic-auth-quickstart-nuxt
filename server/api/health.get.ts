@@ -1,30 +1,17 @@
-import { getGlideClient, isGlideConfigured } from '~/server/utils/glideClient'
+import { getMagicalAuthClient, isGlideConfigured } from '~/server/utils/glideClient'
 
-// Health check endpoint response type
-// This is a custom endpoint, not an SDK type
-interface HealthCheckResponse {
-  status: string
-  glideInitialized: boolean
-  glideProperties: string[]
-  env: {
-    hasApiKey: boolean
-    apiBaseUrl: string
-  }
-  mode: 'local' | 'external'
-}
-
-export default defineEventHandler(async (event): Promise<HealthCheckResponse> => {
-  const glide = getGlideClient()
+export default defineEventHandler(async (event) => {
+  const magicalAuth = getMagicalAuthClient()
   const hasCredentials = isGlideConfigured()
   
   return {
     status: 'ok',
-    glideInitialized: !!glide,
-    glideProperties: glide ? Object.keys(glide) : [],
+    sdk: '@glideidentity/glide-be-node-magical-auth',
+    sdkInitialized: !!magicalAuth,
     env: {
-      hasApiKey: hasCredentials,
-      apiBaseUrl: process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app'
+      hasClientId: !!process.env.GLIDE_CLIENT_ID,
+      hasClientSecret: !!process.env.GLIDE_CLIENT_SECRET,
+      apiBaseUrl: process.env.GLIDE_API_BASE_URL || 'https://api.glideidentity.app',
     },
-    mode: hasCredentials ? 'local' : 'external'
   }
-}) 
+})

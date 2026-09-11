@@ -46,12 +46,13 @@ magical-auth-quickstart-nuxt/
 ├── components/
 │   └── SdkConfigPanel.vue     # SDK configuration panel
 ├── server/
-│   ├── api/phone-auth/
-│   │   ├── prepare.post.ts    # Step 1: Initialize session
-│   │   ├── invoke.post.ts     # Step 2: Report invocation (metrics)
-│   │   ├── process.post.ts    # Step 3: Get result
+│   ├── api/magical-auth/
+│   │   ├── prepare.post.ts           # Step 1: Initialize session
+│   │   ├── report-invocation.post.ts # Step 2: Report invocation (metrics)
+│   │   ├── process.post.ts           # Step 3: Get result
+│   │   ├── complete.post.ts          # Carrier redirect completion
 │   │   └── status/
-│   │       └── [sessionId].get.ts  # Status polling proxy
+│   │       └── [sessionId].get.ts    # Status polling proxy
 │   └── utils/
 │       ├── glideClient.ts     # Glide SDK client setup
 │       └── sessionStore.ts    # Session URL storage for polling
@@ -124,7 +125,7 @@ Now that you've seen it work:
 - **Full-stack in one** - Pages and API routes together
 - **Auto-imports** - No need to import Vue utilities
 - **TypeScript ready** - Type-safe out of the box
-- **Vue composable** - Uses `usePhoneAuth` from `@glideidentity/web-client-sdk/vue`
+- **Vue composable** - Uses `usePhoneAuth` from `@glideidentity/glide-fe-sdk-web/vue`
 
 ## 💬 Need Help?
 

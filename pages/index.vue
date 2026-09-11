@@ -158,14 +158,8 @@
           </div>
         </div>
 
-        <!-- Result Display -->
-        <div v-if="result" class="result-success">
-          <h3>✅ Authentication Successful!</h3>
-          <div class="result-details">
-            <p><strong>Phone Number:</strong> {{ result.phone_number }}</p>
-            <p v-if="'verified' in result"><strong>Verified:</strong> {{ result.verified ? 'Yes' : 'No' }}</p>
-          </div>
-        </div>
+        <!-- Result Overlay -->
+        <ResultOverlay v-if="result" :result="result" @dismiss="reset()" />
       </section>
 
       <!-- Granular Flow -->
@@ -280,14 +274,8 @@
           Reset Flow
         </button>
 
-        <!-- Final Result Display for Granular -->
-        <div v-if="stepThreeResp" class="result-success">
-          <h3>✅ Authentication Successful!</h3>
-          <div class="result-details">
-            <p><strong>Phone Number:</strong> {{ stepThreeResp.phone_number }}</p>
-            <p v-if="'verified' in stepThreeResp"><strong>Verified:</strong> {{ stepThreeResp.verified ? 'Yes' : 'No' }}</p>
-          </div>
-        </div>
+        <!-- Result Overlay for Granular -->
+        <ResultOverlay v-if="stepThreeResp" :result="stepThreeResp" @dismiss="resetGranularFlow()" />
       </section>
 
       <!-- Debug Mode Toggle -->
@@ -339,8 +327,6 @@ import type { PrepareResponse, InvokeResult, InvokeOptions } from '@glideidentit
 // SDK Configuration state
 const showSdkConfig = ref(false)
 const sdkConfig = reactive({
-  pollingInterval: 2000,
-  maxPollingAttempts: 30,
   modalTheme: 'auto',
   viewMode: 'toggle',
   title: '',
@@ -351,8 +337,6 @@ const sdkConfig = reactive({
 })
 
 const defaultSdkConfig = {
-  pollingInterval: 2000,
-  maxPollingAttempts: 30,
   modalTheme: 'auto',
   viewMode: 'toggle',
   title: '',
@@ -386,24 +370,22 @@ const {
   verifyPhoneNumber,
   reset,
 } = usePhoneAuth({
-  endpoints: {
-    prepare: '/api/phone-auth/prepare',
-    reportInvocation: '/api/phone-auth/invoke',
-    process: '/api/phone-auth/process',
-    /*
-     * Polling Endpoint Configuration
-     * OPTIONS:
-     * 1. USE PROXY (recommended): '/api/phone-auth/status'
-     *    - Routes through your backend server
-     *    - Better for debugging (see requests in server logs)
-     *    - Avoids CORS issues
-     * 2. GO DIRECT: Comment out the 'polling' line below
-     *    - SDK will call Glide Magic Auth server directly
-     *    - Requires proper CORS configuration
-     */
-    polling: '/api/phone-auth/status',
-  },
   debug: true,
+  // The SDK uses these default endpoints. Override with relative paths
+  // or full URLs to match your server setup.
+  //
+  // endpoints: {
+  //   prepare: '/api/magical-auth/prepare',
+  //   reportInvocation: '/api/magical-auth/report-invocation',
+  //   process: '/api/magical-auth/process',
+  // },
+  //
+  // Mobile DevTools Console — uncomment to enable an on-screen console
+  // for mobile testing where browser DevTools are not accessible.
+  //
+  // devtools: {
+  //   showMobileConsole: true,
+  // },
 })
 
 // Local UI state
@@ -430,9 +412,6 @@ const stepThreeError = ref<string | null>(null)
 
 // Get invoke options from config (read dynamically so changes take effect immediately)
 const getInvokeOptions = (): InvokeOptions => ({
-  // Polling options - read from config each time so changes take effect without refresh
-  pollingInterval: sdkConfig.pollingInterval,
-  maxPollingAttempts: sdkConfig.maxPollingAttempts,
   modalOptions: {
     theme: sdkConfig.modalTheme as 'auto' | 'dark' | 'light',
     viewMode: sdkConfig.viewMode as 'toggle' | 'dual' | 'pre-step',
@@ -520,8 +499,6 @@ const executeStepTwo = async () => {
     
     const invokeResult = await invokeSecurePrompt(stepOneResp.value!, getInvokeOptions())
     
-    // For Desktop/Link strategies, the credential is obtained via polling
-    // We need to await it here to properly handle cancellation errors
     addDebugLog('info', 'Waiting for credential...', { strategy: invokeResult.strategy })
     const credential = await invokeResult.credential
     
