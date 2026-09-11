@@ -15,23 +15,6 @@
     </div>
     
     <div class="sdk-config-content">
-      <!-- Core Options -->
-      <div class="config-section">
-        <h3>Core Options</h3>
-        
-        <div class="config-field">
-          <label>Polling Interval (ms)</label>
-          <p class="config-description">How often to check authentication status.</p>
-          <input type="number" v-model.number="localConfig.pollingInterval" min="500" max="10000" step="500">
-        </div>
-        
-        <div class="config-field">
-          <label>Max Polling Attempts</label>
-          <p class="config-description">Maximum retries before timeout.</p>
-          <input type="number" v-model.number="localConfig.maxPollingAttempts" min="5" max="120">
-        </div>
-      </div>
-      
       <!-- Modal Options -->
       <div class="config-section">
         <h3>Modal Options</h3>
@@ -129,8 +112,6 @@ import { reactive, watch } from 'vue'
 const props = defineProps<{
   isOpen: boolean
   config: {
-    pollingInterval: number
-    maxPollingAttempts: number
     modalTheme: string
     viewMode: string
     title: string
